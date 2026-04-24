@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "role": "user",
+    "content": "Which opportunities should I prioritize this week?",
+    "time": "9:12 AM"
+  },
+  {
+    "id": 2,
+    "role": "assistant",
+    "content": "Based on your profile, goals, and upcoming deadlines, focus first on the highest-fit internships and the scholarship that is both valuable and time-sensitive.",
+    "time": "9:12 AM"
+  },
+  {
+    "id": 3,
+    "role": "user",
+    "content": "Which has the best ROI?",
+    "time": "9:14 AM"
+  },
+  {
+    "id": 4,
+    "role": "assistant",
+    "content": "The strongest ROI usually comes from a combination of stipend or funding value, signalling value, and realistic effort for your current readiness level.",
+    "time": "9:14 AM"
+  },
+  {
+    "id": 5,
+    "role": "user",
+    "content": "What am I missing for the top scholarship?",
+    "time": "9:15 AM"
+  },
+  {
+    "id": 6,
+    "role": "assistant",
+    "content": "Your main gaps are essay readiness, referee preparation, and making sure your portfolio and academic materials are current and easy to submit.",
+    "time": "9:15 AM"
+  }
+]

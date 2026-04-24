@@ -1,0 +1,92 @@
+[
+  {
+    "id": "doc-001",
+    "title": "Aisha_Rahman_CV.pdf",
+    "category": "CV / Resume",
+    "size": "245 KB",
+    "uploadDate": "10 May 2026",
+    "status": "ready",
+    "usedIn": 3,
+    "path": null
+  },
+  {
+    "id": "doc-002",
+    "title": "Academic_Transcript.pdf",
+    "category": "Academic",
+    "size": "1.2 MB",
+    "uploadDate": "05 May 2026",
+    "status": "ready",
+    "usedIn": 5,
+    "path": null
+  },
+  {
+    "id": "doc-003",
+    "title": "Cover_Letter_PETRONAS.pdf",
+    "category": "CV / Resume",
+    "size": "156 KB",
+    "uploadDate": "08 May 2026",
+    "status": "ready",
+    "usedIn": 1,
+    "path": null
+  },
+  {
+    "id": "doc-004",
+    "title": "Portfolio_Projects.pdf",
+    "category": "Personal",
+    "size": "3.4 MB",
+    "uploadDate": "01 May 2026",
+    "status": "needs-update",
+    "usedIn": 2,
+    "path": null
+  },
+  {
+    "id": "doc-005",
+    "title": "Recommendation_Letter_1.pdf",
+    "category": "Academic",
+    "size": "890 KB",
+    "uploadDate": "15 Apr 2026",
+    "status": "ready",
+    "usedIn": 1,
+    "path": null
+  },
+  {
+    "id": "doc-006",
+    "title": "English_Proficiency_Certificate.pdf",
+    "category": "Certifications",
+    "size": "567 KB",
+    "uploadDate": "20 Apr 2026",
+    "status": "needs-update",
+    "usedIn": 3,
+    "path": null
+  },
+  {
+    "id": "doc-007",
+    "title": "Personal_Statement.pdf",
+    "category": "Personal",
+    "size": "234 KB",
+    "uploadDate": "12 May 2026",
+    "status": "ready",
+    "usedIn": 2,
+    "path": null
+  },
+  {
+    "id": "doc-008",
+    "title": "IC_Passport_Copy.pdf",
+    "category": "Personal",
+    "size": "1.1 MB",
+    "uploadDate": "03 May 2026",
+    "status": "ready",
+    "usedIn": 4,
+    "path": null
+  },
+  {
+    "id": "doc-009",
+    "title": "Python_Certification.pdf",
+    "category": "Certifications",
+    "size": "445 KB",
+    "uploadDate": "Not uploaded",
+    "status": "missing",
+    "usedIn": 0,
+    "path": null
+  }
+]

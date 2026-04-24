@@ -1,0 +1,107 @@
+{
+  "id": "user-001",
+  "name": "Aisha Rahman",
+  "firstName": "Aisha",
+  "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Aisha",
+  "email": "aisha.rahman@um.edu.my",
+  "phone": "+60 12-345 6789",
+  "university": "University of Malaya",
+  "course": "Computer Science",
+  "faculty": "Faculty of Engineering",
+  "year": 3,
+  "studyLevel": "Undergraduate",
+  "cgpaMin": 3.5,
+  "cgpaMax": 3.74,
+  "cgpaLabel": "Good Standing",
+  "goal": "Industry Experience",
+  "timeAvailability": "10 - 15 hrs/week",
+  "readinessLevel": "Actively Preparing",
+  "skills": [
+    "Python",
+    "Data Analysis",
+    "Problem Solving",
+    "Machine Learning",
+    "Web Development",
+    "SQL"
+  ],
+  "interests": [
+    "Data Science",
+    "Machine Learning",
+    "Web Development",
+    "Analytics"
+  ],
+  "goalsProgress": [
+    {
+      "label": "Secure a high-impact internship in tech or data",
+      "progress": 88
+    },
+    {
+      "label": "Win a fully funded scholarship for postgraduate study",
+      "progress": 60
+    },
+    {
+      "label": "Build a stronger portfolio and research profile",
+      "progress": 45
+    }
+  ],
+  "assets": [
+    {
+      "id": "cv",
+      "label": "CV / Resume",
+      "completion": 90,
+      "status": "Uploaded",
+      "filename": "Aisha_Rahman_CV.pdf",
+      "category": "CV / Resume"
+    },
+    {
+      "id": "transcript",
+      "label": "Transcript",
+      "completion": 82,
+      "status": "Uploaded",
+      "filename": "UM_Transcript.pdf",
+      "category": "Academic"
+    },
+    {
+      "id": "portfolio",
+      "label": "Portfolio",
+      "completion": 48,
+      "status": "Added",
+      "link": "https://aisharahman.dev",
+      "category": "Personal"
+    },
+    {
+      "id": "linkedin",
+      "label": "LinkedIn",
+      "completion": 70,
+      "status": "Connected",
+      "link": "https://linkedin.com/in/aisharahman",
+      "category": "Personal"
+    },
+    {
+      "id": "essay",
+      "label": "Essay / Personal Statement",
+      "completion": 42,
+      "status": "Draft",
+      "category": "Personal"
+    },
+    {
+      "id": "referee",
+      "label": "Referee",
+      "completion": 50,
+      "status": "Identified",
+      "category": "Academic"
+    },
+    {
+      "id": "certificates",
+      "label": "Certificates",
+      "completion": 55,
+      "status": "Uploaded",
+      "category": "Certifications"
+    }
+  ],
+  "savedOpportunityIds": [
+    "petronas-2026",
+    "google-step-2026",
+    "adb-japan-2026"
+  ]
+}

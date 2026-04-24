@@ -4,3 +4,5 @@ pydantic
 python-dateutil
 requests
 python-dotenv
+pytest
+httpx
