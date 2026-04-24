@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import requests
@@ -200,6 +200,93 @@ class GLMService:
                 results[item_id] = item
         return results
 
+    def explain_featured_recommendation(
+        self,
+        profile: dict[str, Any],
+        opportunity: dict[str, Any],
+    ) -> dict[str, Any]:
+        system_prompt = (
+            "You are OpportunIQ's home dashboard explainer. "
+            "Local scoring has already identified the top recommendation. "
+            "Your job is to explain clearly why this is the best current opportunity for this student, "
+            "what trade-off the student should understand, and what action to take now. "
+            "Return JSON only."
+        )
+        user_payload = {
+            "task": "Explain the current top recommendation for the home dashboard.",
+            "profile": profile,
+            "opportunity": {
+                "id": opportunity["id"],
+                "title": opportunity["title"],
+                "company": opportunity["company"],
+                "category": opportunity["category"],
+                "deadline": opportunity["deadline"],
+                "estimatedValue": opportunity["estimatedValue"],
+                "fitScore": opportunity["fitScore"],
+                "roiScore": opportunity["roiScore"],
+                "urgencyScore": opportunity["urgencyScore"],
+                "readinessScore": opportunity["readinessScore"],
+                "effort": opportunity["effort"],
+                "pipelineStage": opportunity["pipelineStage"],
+                "missingRequirements": opportunity["missingRequirements"],
+                "nextStep": opportunity["nextStep"],
+            },
+            "outputSchema": {
+                "recommendedAction": "apply-now | prepare-soon | track-later | skip",
+                "summary": "string",
+                "reasoningBullets": ["string"],
+                "tradeoff": "string",
+                "topPickRationale": "string",
+                "nextStep": "string",
+            },
+        }
+        try:
+            parsed = self._request_json(
+                system_prompt,
+                user_payload,
+                max_tokens=700,
+                reasoning_effort="low",
+            )
+        except Exception:
+            parsed = None
+
+        if parsed:
+            return {
+                "recommendedAction": parsed.get("recommendedAction", opportunity["pipelineStage"]),
+                "summary": parsed.get("summary", opportunity["recommendation"]),
+                "reasoningBullets": parsed.get("reasoningBullets")
+                or [
+                    f"Strong fit score of {opportunity['fitScore']}% from the current student profile.",
+                    f"This opportunity offers {opportunity['estimatedValue']} with a {opportunity['effort'].lower()} effort profile.",
+                    f"Immediate next move: {opportunity['nextStep']}",
+                ],
+                "tradeoff": parsed.get("tradeoff", opportunity["tradeoff"]),
+                "topPickRationale": parsed.get(
+                    "topPickRationale",
+                    "GLM selected this as the strongest current blend of fit, timing, and upside.",
+                ),
+                "nextStep": parsed.get("nextStep", opportunity["nextStep"]),
+                "source": "glm",
+            }
+
+        return {
+            "recommendedAction": opportunity["pipelineStage"],
+            "summary": opportunity["recommendation"],
+            "reasoningBullets": [
+                f"Local scoring surfaced a {opportunity['fitScore']}% fit based on course, year, skills, and goal alignment.",
+                f"The opportunity combines {opportunity['estimatedValue']} upside with a {opportunity['effort'].lower()} effort profile.",
+                (
+                    "Some readiness gaps still need attention before applying."
+                    if opportunity["missingRequirements"]
+                    else "Current readiness looks strong enough to move quickly."
+                ),
+            ],
+            "tradeoff": opportunity["tradeoff"],
+            "topPickRationale": "Local fallback: this opportunity stands out because it balances fit, value, urgency, and strategic value better than the rest of the current shortlist.",
+            "nextStep": opportunity["nextStep"],
+            "source": "fallback",
+        }
+
     def explain_opportunity_detail(
         self,
         profile: dict[str, Any],
@@ -249,7 +336,22 @@ class GLMService:
             parsed = None
 
         if parsed:
-            return parsed
+            return {
+                "recommendedAction": parsed.get("recommendedAction", opportunity["pipelineStage"]),
+                "summary": parsed.get("summary", opportunity["recommendation"]),
+                "reasoningBullets": parsed.get("reasoningBullets")
+                or [
+                    f"Strong fit score of {opportunity['fitScore']}% based on the current profile.",
+                    f"Urgency score of {opportunity['urgencyScore']} reflects the deadline pressure.",
+                    f"Readiness score of {opportunity['readinessScore']} shows how prepared the profile is.",
+                ],
+                "missingRequirements": parsed.get("missingRequirements", opportunity["missingRequirements"]),
+                "topPickRationale": parsed.get(
+                    "topPickRationale",
+                    "GLM identified this as a high-value fit with a credible near-term path to action.",
+                ),
+                "source": "glm",
+            }
 
         fallback_bullets = [
             f"Strong local fit score of {opportunity['fitScore']}% based on course, year, goal, and interest overlap.",
@@ -267,6 +369,7 @@ class GLMService:
             "reasoningBullets": fallback_bullets,
             "missingRequirements": opportunity["missingRequirements"],
             "topPickRationale": "Local fallback: this item stands out because it combines fit, value, urgency, and strategic upside.",
+            "source": "fallback",
         }
 
     def readiness_insights(
@@ -458,9 +561,237 @@ class GLMService:
             },
         }
 
+    def _deadline_note(self, opportunity: dict[str, Any]) -> str:
+        days = opportunity.get("daysUntilDeadline")
+        if days is None:
+            return "deadline timing is flexible"
+        if days <= 0:
+            return "deadline has already passed"
+        if days == 1:
+            return "deadline is in 1 day"
+        return f"deadline is in {days} days"
+
+    def _opportunity_brief(self, opportunity: dict[str, Any]) -> str:
+        return (
+            f"{opportunity['title']} ({opportunity['recommendedAction']}, "
+            f"{opportunity['fitScore']}% fit, ROI {opportunity['roiScore']}/100, "
+            f"{self._deadline_note(opportunity)}, {opportunity['estimatedValue']})"
+        )
+
+    def _advisor_fallback(
+        self,
+        message: str,
+        profile: dict[str, Any],
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
+        question = message.lower()
+        top_opportunities = context.get("topOpportunities", [])
+        scholarship_opportunities = context.get("scholarshipOpportunities", [])
+        readiness = context.get("readiness", {})
+        planner = context.get("planner", {})
+        readiness_modules = readiness.get("modules", [])
+        planner_tasks = planner.get("tasks", [])
+
+        def top_by_stage() -> list[dict[str, Any]]:
+            ranked = sorted(
+                top_opportunities,
+                key=lambda item: (
+                    {"apply-now": 0, "prepare-soon": 1, "track-later": 2, "skip": 3}.get(
+                        item["recommendedAction"], 4
+                    ),
+                    -item["priorityScore"],
+                ),
+            )
+            return ranked[:3]
+
+        def top_by_roi() -> list[dict[str, Any]]:
+            return sorted(top_opportunities, key=lambda item: item["roiScore"], reverse=True)[:3]
+
+        def weak_modules() -> list[dict[str, Any]]:
+            return sorted(readiness_modules, key=lambda item: item["completion"])[:3]
+
+        if any(token in question for token in ["priorit", "this week", "focus", "first"]):
+            picks = top_by_stage()
+            response = "Prioritize these opportunities this week:\n" + "\n".join(
+                f"{index}. {self._opportunity_brief(item)}"
+                for index, item in enumerate(picks, start=1)
+            )
+            if picks:
+                response += f"\nStart with: {picks[0]['nextStep']}"
+            return {
+                "response": response,
+                "citedOpportunityIds": [item["id"] for item in picks],
+                "recommendedActions": [item["nextStep"] for item in picks[:3]],
+                "suggestedPrompts": [
+                    "Which one should I finish first today?",
+                    "What is blocking my second-best option?",
+                    "How should I split my next 7 days?",
+                ],
+                "source": "fallback",
+            }
+
+        if any(token in question for token in ["roi", "best return", "value", "highest return"]):
+            picks = top_by_roi()
+            response = "These look like your best ROI opportunities right now:\n" + "\n".join(
+                f"{index}. {self._opportunity_brief(item)}"
+                for index, item in enumerate(picks, start=1)
+            )
+            return {
+                "response": response,
+                "citedOpportunityIds": [item["id"] for item in picks],
+                "recommendedActions": [item["nextStep"] for item in picks[:3]],
+                "suggestedPrompts": [
+                    "Which high-ROI option is easiest to finish quickly?",
+                    "Compare my top internship and scholarship options",
+                    "What am I missing for the best-paying option?",
+                ],
+                "source": "fallback",
+            }
+
+        if "scholarship" in question:
+            picks = scholarship_opportunities[:3]
+            if picks:
+                response = (
+                    "Based on your current profile, these scholarships look most relevant:\n"
+                    + "\n".join(
+                        f"{index}. {self._opportunity_brief(item)}"
+                        for index, item in enumerate(picks, start=1)
+                    )
+                )
+            else:
+                response = (
+                    "No strong scholarship matches surfaced at the top of the current shortlist yet. "
+                    "That usually means your stronger near-term fit is in internships or programmes, or that more readiness work is needed before scholarships become competitive."
+                )
+            return {
+                "response": response,
+                "citedOpportunityIds": [item["id"] for item in picks],
+                "recommendedActions": [item["nextStep"] for item in picks[:3]]
+                or [
+                    "Strengthen your transcript, essay, and referee readiness.",
+                    "Track higher-fit internships while building scholarship readiness.",
+                ],
+                "suggestedPrompts": [
+                    "What is blocking my top scholarship option?",
+                    "Which scholarship should I prepare for next?",
+                    "How do I improve my scholarship readiness this month?",
+                ],
+                "source": "fallback",
+            }
+
+        if any(token in question for token in ["missing", "gap", "block", "unlock"]):
+            target = scholarship_opportunities[0] if scholarship_opportunities else (top_opportunities[0] if top_opportunities else None)
+            missing = target.get("missingRequirements", []) if target else []
+            weak = weak_modules()
+            response_parts = []
+            if target:
+                response_parts.append(
+                    f"For {target['title']}, the main gaps right now are: "
+                    + (", ".join(missing) if missing else "no major missing requirements from the current profile.")
+                )
+            if weak:
+                response_parts.append(
+                    "The weakest readiness areas are "
+                    + ", ".join(f"{item['title']} ({item['completion']}%)" for item in weak)
+                    + "."
+                )
+            response_parts.append("Fix the highest-impact missing asset first, then move back to the top-fit opportunity.")
+            return {
+                "response": " ".join(response_parts),
+                "citedOpportunityIds": [target["id"]] if target else [],
+                "recommendedActions": [
+                    f"Improve {item['title']}" for item in weak[:3]
+                ] or ["Close the top readiness gap before applying."],
+                "suggestedPrompts": [
+                    "Which missing asset matters most?",
+                    "What can I fix in the next 3 days?",
+                    "How much would my fit improve if I close these gaps?",
+                ],
+                "source": "fallback",
+            }
+
+        if any(token in question for token in ["plan", "7 days", "next week", "next 7", "schedule"]):
+            tasks = planner_tasks[:5]
+            response = "Here is a practical next-step plan for the coming week:\n" + "\n".join(
+                f"{index}. {task['title']} ({task['dueLabel']}, {task['duration']})"
+                for index, task in enumerate(tasks, start=1)
+            )
+            if planner.get("focusTip"):
+                response += f"\nFocus tip: {planner['focusTip']}"
+            return {
+                "response": response,
+                "citedOpportunityIds": [
+                    task["opportunityId"]
+                    for task in tasks
+                    if task.get("opportunityId")
+                ],
+                "recommendedActions": [task["title"] for task in tasks[:3]],
+                "suggestedPrompts": [
+                    "What should I do first today?",
+                    "Which task can I safely defer?",
+                    "How can I improve my weekly focus score?",
+                ],
+                "source": "fallback",
+            }
+
+        if any(token in question for token in ["goal", "career", "best fit", "align"]):
+            picks = top_by_stage()
+            weak = weak_modules()
+            response = (
+                f"Your current profile points most strongly toward {profile.get('goal', 'high-value opportunities').lower()}. "
+                "The best-aligned options right now are "
+                + ", ".join(item["title"] for item in picks[:3])
+                + ". "
+            )
+            if weak:
+                response += (
+                    "To unlock even better matches, strengthen "
+                    + ", ".join(item["title"] for item in weak[:2])
+                    + "."
+                )
+            return {
+                "response": response,
+                "citedOpportunityIds": [item["id"] for item in picks],
+                "recommendedActions": [item["nextStep"] for item in picks[:3]],
+                "suggestedPrompts": [
+                    "Which opportunity best fits my long-term goals?",
+                    "Should I focus on internships or scholarships first?",
+                    "What profile upgrade would change my top matches most?",
+                ],
+                "source": "fallback",
+            }
+
+        picks = top_by_stage()
+        weak = weak_modules()
+        response = (
+            "Based on your current profile, I would focus first on "
+            + ", ".join(item["title"] for item in picks[:2])
+            + ". "
+        )
+        if weak:
+            response += (
+                "Your main readiness drag is "
+                + ", ".join(f"{item['title']} ({item['completion']}%)" for item in weak[:2])
+                + ". "
+            )
+        if picks:
+            response += f"Next step: {picks[0]['nextStep']}"
+        return {
+            "response": response,
+            "citedOpportunityIds": [item["id"] for item in picks],
+            "recommendedActions": [item["nextStep"] for item in picks[:3]],
+            "suggestedPrompts": [
+                "Which opportunities should I prioritize this week?",
+                "Show me high ROI opportunities",
+                "What am I missing based on my profile?",
+            ],
+            "source": "fallback",
+        }
+
     def advisor_reply(
         self,
         profile: dict[str, Any],
+        message: str,
         history: list[dict[str, Any]],
         context: dict[str, Any],
     ) -> dict[str, Any]:
@@ -474,9 +805,10 @@ class GLMService:
         user_payload = {
             "task": "Answer the student's question using the current profile, opportunity context, readiness, and planner context.",
             "profile": profile,
+            "message": message,
             "history": history[-6:],
             "context": context,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "outputSchema": {
                 "response": "string",
                 "citedOpportunityIds": ["string"],
@@ -488,27 +820,19 @@ class GLMService:
             parsed = self._request_json(
                 system_prompt,
                 user_payload,
-                max_tokens=1200,
-                reasoning_effort="medium",
+                max_tokens=900,
+                reasoning_effort="low",
             )
         except Exception:
             parsed = None
 
-        if parsed:
-            return parsed
+        if parsed and parsed.get("response"):
+            return {
+                "response": parsed["response"],
+                "citedOpportunityIds": parsed.get("citedOpportunityIds", []),
+                "recommendedActions": parsed.get("recommendedActions", []),
+                "suggestedPrompts": parsed.get("suggestedPrompts", []),
+                "source": "glm",
+            }
 
-        top_ids = [item["id"] for item in context.get("topOpportunities", [])[:3]]
-        return {
-            "response": "Local fallback: focus first on the strongest near-term opportunities, close the biggest readiness gaps, and defer weaker-fit items until your profile improves.",
-            "citedOpportunityIds": top_ids,
-            "recommendedActions": [
-                "Apply now to the highest-fit, high-urgency opportunity.",
-                "Strengthen the missing documents blocking your next-best option.",
-                "Track lower-fit items without spending core focus time on them yet.",
-            ],
-            "suggestedPrompts": [
-                "Which one should I finish first this week?",
-                "What is blocking my best scholarship option?",
-                "How should I split my time over the next 7 days?",
-            ],
-        }
+        return self._advisor_fallback(message, profile, context)

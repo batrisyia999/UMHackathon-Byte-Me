@@ -74,3 +74,32 @@ def test_create_application_from_opportunity(client):
     assert response.status_code == 200
     payload = response.json()
     assert payload["opportunityId"] == "experian-se-2026"
+
+
+def test_dashboard_featured_recommendation_has_ai_explanation_fields(client):
+    response = client.get("/api/dashboard")
+    assert response.status_code == 200
+    payload = response.json()
+    featured = payload["featuredRecommendation"]
+    assert featured is not None
+    assert featured["summary"]
+    assert featured["whyTopMatchBullets"]
+    assert featured["topPickRationale"]
+    assert featured["explanationSource"] in {"glm", "fallback"}
+    assert featured["aiExplanation"]["source"] in {"glm", "fallback"}
+
+
+def test_advisor_chat_uses_question_and_returns_grounded_fallback(client):
+    response = client.post(
+        "/api/advisor/chat",
+        json={
+            "message": "What scholarships am I eligible for?",
+            "history": [],
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["response"]
+    assert payload["source"] == "fallback"
+    assert payload["suggestedPrompts"]
+    assert any(opportunity_id for opportunity_id in payload["citedOpportunityIds"])

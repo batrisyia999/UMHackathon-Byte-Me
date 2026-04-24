@@ -298,6 +298,72 @@ class ScreenService:
             "engagement": engagement,
         }
 
+    def _planner_snapshot(self, tasks: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int, float]:
+        categories = []
+        total_minutes = sum(task["durationMinutes"] for task in tasks)
+        for title, stage, note in [
+            ("Apply Now", "apply-now", "High ROI"),
+            ("Prepare Soon", "prepare-soon", "Medium ROI"),
+            ("Track Later", "track-later", "Lower urgency"),
+            ("Skip for Now", "skip", "Low ROI"),
+        ]:
+            stage_tasks = [task for task in tasks if task["type"] == stage]
+            categories.append(
+                {
+                    "title": title,
+                    "count": len(stage_tasks),
+                    "effort": f"{round(sum(task['durationMinutes'] for task in stage_tasks) / 60, 1)} hrs",
+                    "roi": note,
+                }
+            )
+
+        focus_score = min(
+            100,
+            int(
+                (
+                    sum(
+                        task["durationMinutes"]
+                        for task in tasks
+                        if task["type"] in {"apply-now", "prepare-soon"}
+                    )
+                    / max(total_minutes, 1)
+                )
+                * 100
+            ),
+        )
+        return categories, focus_score, round(total_minutes / 60, 1)
+
+    def _build_featured_recommendation(
+        self,
+        profile: ProfileState,
+        featured: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
+        if featured is None:
+            return None
+
+        ai = self.glm.explain_featured_recommendation(
+            self._profile_summary(profile),
+            featured,
+        )
+        return {
+            **featured,
+            "recommendedAction": ai["recommendedAction"],
+            "summary": ai["summary"],
+            "whyTopMatchBullets": ai["reasoningBullets"],
+            "tradeoff": ai["tradeoff"],
+            "topPickRationale": ai["topPickRationale"],
+            "nextStep": ai["nextStep"],
+            "explanationSource": ai["source"],
+            "aiExplanation": {
+                "summary": ai["summary"],
+                "reasoningBullets": ai["reasoningBullets"],
+                "tradeoff": ai["tradeoff"],
+                "topPickRationale": ai["topPickRationale"],
+                "nextStep": ai["nextStep"],
+                "source": ai["source"],
+            },
+        }
+
     def health(self) -> dict[str, Any]:
         return {
             "status": "ok",
@@ -363,7 +429,7 @@ class ScreenService:
         overall, modules, _ = self._readiness_modules(profile, documents, evaluations)
         summary = self._build_pipeline_summary(evaluations)
         tasks = [task.model_dump(mode="json") for task in self._load_planner()[:5]]
-        featured = evaluations[0] if evaluations else None
+        featured = self._build_featured_recommendation(profile, evaluations[0] if evaluations else None)
         prompt_suggestions = [
             "What should I apply for this week?",
             "Which opportunities give me the best ROI?",
@@ -596,25 +662,7 @@ class ScreenService:
     def get_planner(self) -> dict[str, Any]:
         profile, _, evaluations = self._evaluated_opportunities()
         tasks = [task.model_dump(mode="json") for task in self._load_planner()]
-        total_minutes = sum(task["durationMinutes"] for task in tasks)
-        categories = []
-        for title, stage, note in [
-            ("Apply Now", "apply-now", "High ROI"),
-            ("Prepare Soon", "prepare-soon", "Medium ROI"),
-            ("Track Later", "track-later", "Lower urgency"),
-            ("Skip for Now", "skip", "Low ROI"),
-        ]:
-            stage_tasks = [task for task in tasks if task["type"] == stage]
-            categories.append(
-                {
-                    "title": title,
-                    "count": len(stage_tasks),
-                    "effort": f"{round(sum(task['durationMinutes'] for task in stage_tasks) / 60, 1)} hrs",
-                    "roi": note,
-                }
-            )
-
-        focus_score = min(100, int((sum(task["durationMinutes"] for task in tasks if task["type"] in {"apply-now", "prepare-soon"}) / max(total_minutes, 1)) * 100))
+        categories, focus_score, total_hours = self._planner_snapshot(tasks)
         ai = self.glm.planner_strategy(
             self._profile_summary(profile),
             tasks,
@@ -624,7 +672,7 @@ class ScreenService:
             "weekLabel": "Current Week",
             "tasks": tasks,
             "categories": categories,
-            "totalEstimatedTimeHours": round(total_minutes / 60, 1),
+            "totalEstimatedTimeHours": total_hours,
             "focusScore": focus_score,
             "rationale": ai["rationale"],
             "optimization": ai["optimization"],
@@ -791,15 +839,61 @@ class ScreenService:
 
     def advisor_chat(self, message: str, history: list[dict[str, Any]]) -> dict[str, Any]:
         profile, documents, evaluations = self._evaluated_opportunities()
-        planner = self.get_planner()
-        readiness = self.get_readiness()
+        overall, modules, blockers = self._readiness_modules(profile, documents, evaluations)
+        planner_tasks = [task.model_dump(mode="json") for task in self._load_planner()]
+        planner_categories, focus_score, total_hours = self._planner_snapshot(planner_tasks)
         response = self.glm.advisor_reply(
             self._profile_summary(profile),
+            message,
             history,
             {
-                "topOpportunities": evaluations[:5],
-                "readiness": {"overall": readiness["overallReadiness"], "modules": readiness["modules"][:4]},
-                "planner": {"tasks": planner["tasks"][:5], "focusScore": planner["focusScore"]},
+                "topOpportunities": [
+                    {
+                        "id": item["id"],
+                        "title": item["title"],
+                        "category": item["category"],
+                        "fitScore": item["fitScore"],
+                        "roiScore": item["roiScore"],
+                        "priorityScore": item["priorityScore"],
+                        "recommendedAction": item.get("recommendedAction", item["pipelineStage"]),
+                        "daysUntilDeadline": item["daysUntilDeadline"],
+                        "deadline": item["deadline"],
+                        "estimatedValue": item["estimatedValue"],
+                        "missingRequirements": item["missingRequirements"],
+                        "nextStep": item["nextStep"],
+                    }
+                    for item in evaluations[:8]
+                ],
+                "scholarshipOpportunities": [
+                    {
+                        "id": item["id"],
+                        "title": item["title"],
+                        "category": item["category"],
+                        "fitScore": item["fitScore"],
+                        "roiScore": item["roiScore"],
+                        "priorityScore": item["priorityScore"],
+                        "recommendedAction": item.get("recommendedAction", item["pipelineStage"]),
+                        "daysUntilDeadline": item["daysUntilDeadline"],
+                        "deadline": item["deadline"],
+                        "estimatedValue": item["estimatedValue"],
+                        "missingRequirements": item["missingRequirements"],
+                        "nextStep": item["nextStep"],
+                    }
+                    for item in evaluations
+                    if item["category"] == "Scholarship"
+                ][:5],
+                "readiness": {
+                    "overall": overall,
+                    "modules": modules[:6],
+                    "blockers": blockers[:3],
+                },
+                "planner": {
+                    "tasks": planner_tasks[:6],
+                    "categories": planner_categories,
+                    "focusScore": focus_score,
+                    "totalEstimatedTimeHours": total_hours,
+                    "focusTip": "Protect your highest-focus window for apply-now tasks before lower-ROI prep work.",
+                },
             },
         )
 
