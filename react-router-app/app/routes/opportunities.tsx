@@ -20,6 +20,18 @@ export default function Opportunities() {
     { label: 'Location', value: 'Any' },
   ]);
 
+  const allOpportunities = [
+    { id: "petronas-2025", tag: "Highly Matched", verified: true, logo: "https://logo.clearbit.com/petronas.com", title: "PETRONAS Digital Innovation Internship 2025", company: "PETRONAS", category: "Internships", deadline: "20 Jun 2025", estimatedValue: "RM 7,000 / month", fitScore: 96, effort: "Medium", eligibility: "High", roiScore: 92, recommendation: "Strong match with your skills in Python, data analysis and problem solving.", topPick: true },
+    { id: "adb-2025", verified: true, logo: "https://logo.clearbit.com/adb.org", title: "ADB-Japan Scholarship Program 2025", company: "Asian Development Bank", category: "Scholarships", deadline: "15 May 2025", estimatedValue: "Full Tuition + Living Allowance", fitScore: 97, effort: "High", eligibility: "High", roiScore: 90, recommendation: "Excellent fit for your academic profile and career goals.", topPick: true },
+    { id: "google-step-2025", tag: "Newly Added", verified: true, logo: "https://logo.clearbit.com/google.com", title: "Google STEP Internship (GAPAC) 2025", company: "Google", category: "Internships", deadline: "24 May 2025", estimatedValue: "RM 9,500 / month", fitScore: 96, effort: "Medium", eligibility: "Medium", roiScore: 91, recommendation: "Great opportunity to work on real-world projects at Google." },
+    { id: "icpc-2025", tag: "Trending", verified: true, logo: "https://logo.clearbit.com/icpc.global", title: "ICPC Asia Pacific Finals 2025", company: "ICPC Foundation", category: "Competitions", deadline: "15 Jun 2025", estimatedValue: "RM 2,000", fitScore: 88, effort: "Medium", eligibility: "High", roiScore: 85, recommendation: "Strong track record in programming competitions." },
+    { id: "khazanah-2025", tag: "Highly Matched", verified: true, logo: "https://logo.clearbit.com/khazanah.com.my", title: "Yayasan Khazanah Global Scholarship", company: "Yayasan Khazanah", category: "Scholarships", deadline: "30 Apr 2025", estimatedValue: "Full Tuition + Allowance", fitScore: 92, effort: "High", eligibility: "Medium", roiScore: 95, recommendation: "Prestigious scholarship matching your high CGPA." },
+    { id: "mdec-grant-2025", verified: true, logo: "https://logo.clearbit.com/mdec.my", title: "MDEC Digital Content Grant", company: "MDEC", category: "Grants", deadline: "01 Aug 2025", estimatedValue: "Up to RM 50,000", fitScore: 85, effort: "High", eligibility: "Medium", roiScore: 88, recommendation: "Good fit for your final year tech project." },
+    { id: "aws-cert-2025", tag: "Trending", verified: true, logo: "https://logo.clearbit.com/aws.amazon.com", title: "AWS Certified Solutions Architect", company: "Amazon Web Services", category: "Certifications", deadline: "Self-paced", estimatedValue: "RM 600", fitScore: 90, effort: "Medium", eligibility: "High", roiScore: 94, recommendation: "Highly sought after in the tech industry." },
+  ];
+
+  const filteredOpportunities = allOpportunities.filter(opp => activeCategory === 'All' || opp.category === activeCategory);
+
   const removeFilter = (label: string) => {
     setFilters(prev => prev.filter(f => f.label !== label));
   };
@@ -73,7 +85,7 @@ export default function Opportunities() {
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-600">48 opportunities found</div>
+          <div className="text-sm text-gray-600">{filteredOpportunities.length} opportunities found</div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Sort by:</span>
             {['Best Match', 'Highest ROI', 'Most Urgent', 'Low Effort'].map(sort => (
@@ -100,71 +112,26 @@ export default function Opportunities() {
       <div className="flex gap-6">
         <div className="flex-1">
           <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-4' : 'space-y-4'}>
-            <OpportunityCard
-              id="petronas-2025"
-              tag="Highly Matched"
-              verified={true}
-              logo="https://logo.clearbit.com/petronas.com"
-              title="PETRONAS Digital Innovation Internship 2025"
-              company="PETRONAS"
-              category="Internship"
-              deadline="20 Jun 2025"
-              estimatedValue="RM 7,000 / month"
-              fitScore={96}
-              effort="Medium"
-              eligibility="High"
-              roiScore={92}
-              recommendation="Strong match with your skills in Python, data analysis and problem solving."
-              topPick={true}
-            />
-            <OpportunityCard
-              id="adb-2025"
-              verified={true}
-              logo="https://logo.clearbit.com/adb.org"
-              title="ADB-Japan Scholarship Program 2025"
-              company="Asian Development Bank"
-              category="Scholarship"
-              deadline="15 May 2025"
-              estimatedValue="Full Tuition + Living Allowance"
-              fitScore={97}
-              effort="High"
-              eligibility="High"
-              roiScore={90}
-              recommendation="Excellent fit for your academic profile and career goals."
-              topPick={true}
-            />
-            <OpportunityCard
-              id="google-step-2025"
-              tag="Newly Added"
-              verified={true}
-              logo="https://logo.clearbit.com/google.com"
-              title="Google STEP Internship (GAPAC) 2025"
-              company="Google"
-              category="Internship"
-              deadline="24 May 2025"
-              estimatedValue="RM 9,500 / month"
-              fitScore={96}
-              effort="Medium"
-              eligibility="Medium"
-              roiScore={91}
-              recommendation="Great opportunity to work on real-world projects at Google."
-            />
-            <OpportunityCard
-              id="icpc-2025"
-              tag="Trending"
-              verified={true}
-              logo="https://logo.clearbit.com/icpc.global"
-              title="ICPC Asia Pacific Finals 2025"
-              company="ICPC Foundation"
-              category="Competition"
-              deadline="15 Jun 2025"
-              estimatedValue="RM 2,000"
-              fitScore={88}
-              effort="Medium"
-              eligibility="High"
-              roiScore={85}
-              recommendation="Strong track record in programming competitions."
-            />
+            {filteredOpportunities.map(opp => (
+              <OpportunityCard
+                key={opp.id}
+                id={opp.id}
+                tag={opp.tag}
+                verified={opp.verified}
+                logo={opp.logo}
+                title={opp.title}
+                company={opp.company}
+                category={opp.category}
+                deadline={opp.deadline}
+                estimatedValue={opp.estimatedValue}
+                fitScore={opp.fitScore}
+                effort={opp.effort}
+                eligibility={opp.eligibility}
+                roiScore={opp.roiScore}
+                recommendation={opp.recommendation}
+                topPick={opp.topPick}
+              />
+            ))}
           </div>
           <div className="mt-6 flex justify-center">
             <button

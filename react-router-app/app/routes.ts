@@ -16,4 +16,7 @@ export default [
     route("readiness", "routes/readiness.tsx"),
     route("planner", "routes/planner.tsx"),
     route("insights", "routes/insights.tsx"),
+    route("search", "routes/search.tsx"),
+    route("login", "routes/login.tsx"),
+    route("signup", "routes/signup.tsx"),
 ] satisfies RouteConfig
