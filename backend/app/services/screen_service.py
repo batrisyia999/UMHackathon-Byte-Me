@@ -128,6 +128,154 @@ class ScreenService:
             "assets": [asset.label for asset in profile.assets],
         }
 
+    def _behavior_signals(
+        self,
+        profile: ProfileState,
+        evaluations: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        category_weights: dict[str, int] = {}
+        evaluation_lookup = {item["id"]: item for item in evaluations}
+        for opportunity_id in profile.savedOpportunityIds:
+            item = evaluation_lookup.get(opportunity_id)
+            if item:
+                category_weights[item["category"]] = category_weights.get(item["category"], 0) + 3
+
+        for application in self._load_applications():
+            item = evaluation_lookup.get(application.opportunityId)
+            if item:
+                category_weights[item["category"]] = category_weights.get(item["category"], 0) + 4
+
+        for task in self._load_planner():
+            if task.completed and task.opportunityId:
+                item = evaluation_lookup.get(task.opportunityId)
+                if item:
+                    category_weights[item["category"]] = category_weights.get(item["category"], 0) + 2
+
+        advisor_history = self._load_advisor_history()[-8:]
+        repeated_topics: dict[str, int] = {}
+        for message in advisor_history:
+            content = message.content.lower()
+            for keyword, label in [
+                ("internship", "Internship"),
+                ("scholarship", "Scholarship"),
+                ("grant", "Grant"),
+                ("competition", "Competition"),
+                ("certificate", "Certification"),
+                ("certification", "Certification"),
+            ]:
+                if keyword in content:
+                    repeated_topics[label] = repeated_topics.get(label, 0) + 1
+                    category_weights[label] = category_weights.get(label, 0) + 1
+
+        preferred_categories = [
+            category
+            for category, _ in sorted(
+                category_weights.items(),
+                key=lambda item: (-item[1], item[0]),
+            )
+        ]
+
+        return {
+            "preferredCategories": preferred_categories[:3],
+            "savedOpportunityIds": list(profile.savedOpportunityIds),
+            "applicationOpportunityIds": [item.opportunityId for item in self._load_applications()],
+            "completedPlannerTaskCount": len([task for task in self._load_planner() if task.completed]),
+            "recentAdvisorTopics": [
+                topic
+                for topic, _ in sorted(repeated_topics.items(), key=lambda item: (-item[1], item[0]))
+            ],
+        }
+
+    def _goal_focus_categories(self, goal: str) -> set[str]:
+        normalized = goal.lower()
+        if "industry" in normalized or "internship" in normalized:
+            return {"Internship", "Programme"}
+        if "scholar" in normalized or "postgraduate" in normalized:
+            return {"Scholarship"}
+        if "startup" in normalized or "grant" in normalized or "funding" in normalized:
+            return {"Grant", "Competition", "Programme"}
+        if "certification" in normalized or "certificate" in normalized:
+            return {"Certification", "Programme"}
+        if "competition" in normalized:
+            return {"Competition"}
+        return set()
+
+    def _select_featured_recommendation(
+        self,
+        profile: ProfileState,
+        evaluations: list[dict[str, Any]],
+        behavior_signals: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        visible = [item for item in evaluations if item["pipelineStage"] != "skip"][:3] or evaluations[:3]
+        if not visible:
+            return None
+        preferred = set(behavior_signals.get("preferredCategories", []))
+        goal_focus = self._goal_focus_categories(profile.goal)
+        return max(
+            visible,
+            key=lambda item: (
+                item["priorityScore"]
+                + (10 if item["category"] in goal_focus else 0)
+                + (8 if item["category"] in preferred else 0)
+                + (4 if item["id"] in behavior_signals.get("savedOpportunityIds", []) else 0),
+                item["fitScore"],
+                item["roiScore"],
+            ),
+        )
+
+    def _enhance_visible_items(
+        self,
+        profile: ProfileState,
+        items: list[dict[str, Any]],
+        *,
+        limit: int = 3,
+    ) -> list[dict[str, Any]]:
+        if not items:
+            return []
+        visible = [item for item in items if item["pipelineStage"] != "skip"][:limit]
+        if not visible:
+            visible = items[:limit]
+        enhancements = self.glm.explain_candidates(self._profile_summary(profile), visible)
+
+        enhanced_items: list[dict[str, Any]] = []
+        for item in items:
+            enhanced = {**item}
+            if item["id"] in enhancements:
+                ai = enhancements[item["id"]]
+                enhanced.update(
+                    {
+                        "recommendedAction": ai["recommendedAction"],
+                        "recommendation": ai["reasoningSummary"],
+                        "tradeoff": ai["tradeoff"],
+                        "whyNotNow": ai["whyNotNow"],
+                        "nextStep": ai["nextStep"],
+                        "topPickRationale": ai["topPickRationale"],
+                        "confidenceScore": ai["confidenceScore"],
+                        "confidenceReason": ai["confidenceReason"],
+                        "uncertainFields": ai["uncertainFields"],
+                        "whyRecommended": ai["whyRecommended"],
+                        "economicImpact": ai["economicImpact"],
+                        "estimatedValueUnlocked": ai["estimatedValueUnlocked"],
+                        "valueAtRisk": ai["valueAtRisk"],
+                        "timeSavedEstimate": ai["timeSavedEstimate"],
+                        "strategicValueNarrative": ai["strategicValueNarrative"],
+                        "aiExplanation": {
+                            "summary": ai["reasoningSummary"],
+                            "reasoningBullets": ai["reasoningBullets"],
+                            "tradeoff": ai["tradeoff"],
+                            "whyNotNow": ai["whyNotNow"],
+                            "nextStep": ai["nextStep"],
+                            "economicImpact": ai["economicImpact"],
+                            "confidenceScore": ai["confidenceScore"],
+                            "confidenceReason": ai["confidenceReason"],
+                            "uncertainFields": ai["uncertainFields"],
+                            "source": ai["source"],
+                        },
+                    }
+                )
+            enhanced_items.append(enhanced)
+        return enhanced_items
+
     def _evaluated_opportunities(
         self,
         *,
@@ -351,15 +499,28 @@ class ScreenService:
             "summary": ai["summary"],
             "whyTopMatchBullets": ai["reasoningBullets"],
             "tradeoff": ai["tradeoff"],
+            "whyNotNow": ai["whyNotNow"],
             "topPickRationale": ai["topPickRationale"],
             "nextStep": ai["nextStep"],
+            "economicImpact": ai["economicImpact"],
+            "estimatedValueUnlocked": ai["estimatedValueUnlocked"],
+            "valueAtRisk": ai["valueAtRisk"],
+            "timeSavedEstimate": ai["timeSavedEstimate"],
+            "strategicValueNarrative": ai["strategicValueNarrative"],
+            "confidenceScore": ai["confidenceScore"],
+            "confidenceReason": ai["confidenceReason"],
+            "uncertainFields": ai["uncertainFields"],
             "explanationSource": ai["source"],
             "aiExplanation": {
                 "summary": ai["summary"],
                 "reasoningBullets": ai["reasoningBullets"],
                 "tradeoff": ai["tradeoff"],
-                "topPickRationale": ai["topPickRationale"],
+                "whyNotNow": ai["whyNotNow"],
                 "nextStep": ai["nextStep"],
+                "economicImpact": ai["economicImpact"],
+                "confidenceScore": ai["confidenceScore"],
+                "confidenceReason": ai["confidenceReason"],
+                "uncertainFields": ai["uncertainFields"],
                 "source": ai["source"],
             },
         }
@@ -376,6 +537,7 @@ class ScreenService:
                 "documents": len(self._load_documents()),
                 "plannerTasks": len(self._load_planner()),
             },
+            "aiStats": self.glm.stats_snapshot(),
         }
 
     def get_profile(self) -> dict[str, Any]:
@@ -429,7 +591,11 @@ class ScreenService:
         overall, modules, _ = self._readiness_modules(profile, documents, evaluations)
         summary = self._build_pipeline_summary(evaluations)
         tasks = [task.model_dump(mode="json") for task in self._load_planner()[:5]]
-        featured = self._build_featured_recommendation(profile, evaluations[0] if evaluations else None)
+        behavior_signals = self._behavior_signals(profile, evaluations)
+        featured = self._build_featured_recommendation(
+            profile,
+            self._select_featured_recommendation(profile, evaluations, behavior_signals),
+        )
         prompt_suggestions = [
             "What should I apply for this week?",
             "Which opportunities give me the best ROI?",
@@ -463,6 +629,7 @@ class ScreenService:
             },
             "overallReadiness": overall,
             "aiPromptSuggestions": prompt_suggestions,
+            "behaviorSignals": behavior_signals,
         }
 
     def get_opportunities(
@@ -499,6 +666,7 @@ class ScreenService:
         else:
             items.sort(key=lambda item: item["priorityScore"], reverse=True)
 
+        items = self._enhance_visible_items(profile, items, limit=3)
         sliced = items[offset : offset + limit]
         top_three = items[:3]
         why_recommended = [
@@ -523,6 +691,8 @@ class ScreenService:
                         "name": item["title"],
                         "type": item["category"],
                         "score": item["fitScore"],
+                        "whyRecommended": item.get("whyRecommended", item["recommendation"]),
+                        "confidenceScore": item.get("confidenceScore"),
                     }
                     for item in top_three
                 ],
@@ -594,11 +764,34 @@ class ScreenService:
             "recommendedAction": detail["recommendedAction"],
             "summary": detail["summary"],
             "reasoningBullets": detail["reasoningBullets"],
+            "tradeoff": detail["tradeoff"],
+            "whyNotNow": detail["whyNotNow"],
+            "nextStep": detail["nextStep"],
+            "economicImpact": detail["economicImpact"],
+            "estimatedValueUnlocked": detail["estimatedValueUnlocked"],
+            "valueAtRisk": detail["valueAtRisk"],
+            "timeSavedEstimate": detail["timeSavedEstimate"],
+            "strategicValueNarrative": detail["strategicValueNarrative"],
+            "confidenceScore": detail["confidenceScore"],
+            "confidenceReason": detail["confidenceReason"],
+            "uncertainFields": detail["uncertainFields"],
             "missingRequirements": detail["missingRequirements"],
             "topPickRationale": detail["topPickRationale"],
             "requiredDocuments": required_documents,
             "checklist": checklist,
             "competitionInfo": competition_info,
+            "aiExplanation": {
+                "summary": detail["summary"],
+                "reasoningBullets": detail["reasoningBullets"],
+                "tradeoff": detail["tradeoff"],
+                "whyNotNow": detail["whyNotNow"],
+                "nextStep": detail["nextStep"],
+                "economicImpact": detail["economicImpact"],
+                "confidenceScore": detail["confidenceScore"],
+                "confidenceReason": detail["confidenceReason"],
+                "uncertainFields": detail["uncertainFields"],
+                "source": detail["source"],
+            },
             "quickActions": [
                 {"label": "Apply on Official Site", "href": evaluation["opportunityLink"]},
                 {"label": "Save for Later", "saved": evaluation["saved"]},
@@ -622,7 +815,8 @@ class ScreenService:
         return {"id": opportunity_id, "saved": opportunity_id in saved_ids}
 
     def get_pipeline(self) -> dict[str, Any]:
-        _, _, evaluations = self._evaluated_opportunities()
+        profile, _, evaluations = self._evaluated_opportunities()
+        evaluations = self._enhance_visible_items(profile, evaluations, limit=3)
         summary = self._build_pipeline_summary(evaluations)
         grouped = {
             stage: [item for item in evaluations if item["pipelineStage"] == stage]
@@ -639,19 +833,69 @@ class ScreenService:
     def get_readiness(self) -> dict[str, Any]:
         profile, documents, evaluations = self._evaluated_opportunities()
         overall, modules, blockers = self._readiness_modules(profile, documents, evaluations)
+        behavior_signals = self._behavior_signals(profile, evaluations)
+        priority_ids = set(profile.savedOpportunityIds + [item.opportunityId for item in self._load_applications()])
+        prioritized_targets = sorted(
+            evaluations,
+            key=lambda item: (
+                0 if item["id"] in priority_ids else 1,
+                {"apply-now": 0, "prepare-soon": 1, "track-later": 2, "skip": 3}[item["pipelineStage"]],
+                -item["priorityScore"],
+            ),
+        )
         ai = self.glm.readiness_insights(
             self._profile_summary(profile),
             modules,
-            evaluations[:4],
+            prioritized_targets[:4],
+            behavior_signals=behavior_signals,
         )
+        target_lookup = {item["title"]: item for item in prioritized_targets[:4]}
+        enriched_blockers = []
+        for blocker in blockers:
+            matched = target_lookup.get(blocker["name"])
+            unlock_value = int((matched or {}).get("estimatedValueUnlocked") or (matched or {}).get("estimatedValueRaw") or 0)
+            enriched_blockers.append(
+                {
+                    **blocker,
+                    "unlockImpact": (
+                        f"Fixing this blocker could improve access to about RM{unlock_value:,.0f} in current opportunity value."
+                        if unlock_value
+                        else "Fixing this blocker should improve shortlist conversion odds."
+                    ),
+                }
+            )
+        ai_checklist = []
+        for item in ai["checklist"]:
+            ai_checklist.append(
+                {
+                    **item,
+                    "unlockImpact": (
+                        "Likely to improve the best saved or in-progress opportunities first."
+                        if behavior_signals["savedOpportunityIds"] or behavior_signals["applicationOpportunityIds"]
+                        else "Likely to improve shortlist readiness across multiple opportunities."
+                    ),
+                }
+            )
         return {
             "overallReadiness": overall,
             "label": "Excellent" if overall >= 85 else "Good" if overall >= 70 else "Needs Work",
             "modules": modules,
-            "blockers": blockers,
-            "aiChecklist": ai["checklist"],
+            "blockers": enriched_blockers,
+            "aiChecklist": ai_checklist,
             "tip": ai["tip"],
             "blockerNarrative": ai["blockerNarrative"],
+            "aiExplanation": {
+                "summary": ai["summary"],
+                "reasoningBullets": ai["reasoningBullets"],
+                "tradeoff": ai["tradeoff"],
+                "whyNotNow": ai["whyNotNow"],
+                "nextStep": ai["nextStep"],
+                "economicImpact": ai["economicImpact"],
+                "confidenceScore": ai["confidenceScore"],
+                "confidenceReason": ai["confidenceReason"],
+                "uncertainFields": ai["uncertainFields"],
+                "source": ai["source"],
+            },
             "nextMilestone": {
                 "target": 80 if overall < 80 else 90,
                 "current": overall,
@@ -677,6 +921,18 @@ class ScreenService:
             "rationale": ai["rationale"],
             "optimization": ai["optimization"],
             "focusTip": ai["focusTip"],
+            "aiExplanation": {
+                "summary": ai["summary"],
+                "reasoningBullets": ai["reasoningBullets"],
+                "tradeoff": ai["tradeoff"],
+                "whyNotNow": ai["whyNotNow"],
+                "nextStep": ai["nextStep"],
+                "economicImpact": ai["economicImpact"],
+                "confidenceScore": ai["confidenceScore"],
+                "confidenceReason": ai["confidenceReason"],
+                "uncertainFields": ai["uncertainFields"],
+                "source": ai["source"],
+            },
         }
 
     def toggle_planner_task(self, task_id: str) -> dict[str, Any] | None:
@@ -781,6 +1037,7 @@ class ScreenService:
             {
                 "metrics": metrics,
                 "pipelineValue": pipeline_value,
+                "valueAtRisk": value_at_risk,
                 "categories": categories,
                 "urgency": urgency,
                 "overallReadiness": overall,
@@ -803,6 +1060,19 @@ class ScreenService:
             ],
             "aiInsights": ai["cards"],
             "strategicShift": ai["strategy"],
+            "economicImpactNarrative": ai["economicImpactNarrative"],
+            "aiExplanation": {
+                "summary": ai["summary"],
+                "reasoningBullets": ai["reasoningBullets"],
+                "tradeoff": ai["tradeoff"],
+                "whyNotNow": ai["whyNotNow"],
+                "nextStep": ai["nextStep"],
+                "economicImpact": ai["economicImpact"],
+                "confidenceScore": ai["confidenceScore"],
+                "confidenceReason": ai["confidenceReason"],
+                "uncertainFields": ai["uncertainFields"],
+                "source": ai["source"],
+            },
         }
 
     def get_advisor_bootstrap(self) -> dict[str, Any]:
@@ -842,6 +1112,7 @@ class ScreenService:
         overall, modules, blockers = self._readiness_modules(profile, documents, evaluations)
         planner_tasks = [task.model_dump(mode="json") for task in self._load_planner()]
         planner_categories, focus_score, total_hours = self._planner_snapshot(planner_tasks)
+        behavior_signals = self._behavior_signals(profile, evaluations)
         response = self.glm.advisor_reply(
             self._profile_summary(profile),
             message,
@@ -894,6 +1165,7 @@ class ScreenService:
                     "totalEstimatedTimeHours": total_hours,
                     "focusTip": "Protect your highest-focus window for apply-now tasks before lower-ROI prep work.",
                 },
+                "behaviorSignals": behavior_signals,
             },
         )
 

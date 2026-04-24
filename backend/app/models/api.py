@@ -5,12 +5,51 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
+AIResponseSource = Literal["glm", "fallback"]
+
+
+class SharedAIContract(BaseModel):
+    summary: str = ""
+    reasoningBullets: list[str] = Field(default_factory=list)
+    tradeoff: str = ""
+    whyNotNow: str = ""
+    nextStep: str = ""
+    economicImpact: str = ""
+    confidenceScore: int = 0
+    confidenceReason: str = ""
+    uncertainFields: list[str] = Field(default_factory=list)
+    source: AIResponseSource = "fallback"
+
+
+class PromptModeStats(BaseModel):
+    calls: int = 0
+    cacheHits: int = 0
+    cacheMisses: int = 0
+    liveSuccesses: int = 0
+    liveFailures: int = 0
+    fallbacks: int = 0
+    malformedResponses: int = 0
+    emptyResponses: int = 0
+    avgLatencyMs: float = 0.0
+
+
+class AIObservabilityStats(BaseModel):
+    cacheHits: int = 0
+    cacheMisses: int = 0
+    liveSuccesses: int = 0
+    liveFailures: int = 0
+    malformedResponses: int = 0
+    emptyResponses: int = 0
+    byPromptMode: dict[str, PromptModeStats] = Field(default_factory=dict)
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok"]
     appName: str
     glmConfigured: bool
     model: str
     seedCounts: dict[str, int]
+    aiStats: AIObservabilityStats | None = None
 
 
 class ProfileUpdateRequest(BaseModel):

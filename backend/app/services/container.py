@@ -17,7 +17,7 @@ class ServiceContainer:
         self.store = JsonStateStore(settings)
         self.catalog = CatalogService(self.store)
         self.scoring = ScoringService()
-        self.glm = GLMService(settings)
+        self.glm = GLMService(settings, self.store)
         self.screens = ScreenService(
             settings=settings,
             store=self.store,

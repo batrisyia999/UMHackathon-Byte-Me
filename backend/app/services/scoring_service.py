@@ -76,6 +76,12 @@ class ScoringService:
         if "scholar" in goal or "postgraduate" in goal:
             if category == "scholarship":
                 return 100
+        if "startup" in goal or "grant" in goal or "funding" in goal:
+            if category in {"grant", "competition", "programme"}:
+                return 96
+        if "certification" in goal or "certificate" in goal or "skill" in goal:
+            if category in {"certification", "programme"}:
+                return 92
         if "research" in goal:
             if "research" in title:
                 return 90
@@ -240,6 +246,9 @@ class ScoringService:
                 + opportunity.strategicValue * 0.16,
             )
         )
+        goal_priority_bonus = 10 if goal_alignment >= 96 else 6 if goal_alignment >= 90 else 0
+        roi_score = min(100, roi_score + max(0, goal_priority_bonus // 2))
+        priority_score = min(100, priority_score + goal_priority_bonus)
 
         eligibility_value = fit_score * 0.55 + readiness_score * 0.20 + (
             25 if discipline_match and year_match and level_match else 0
@@ -274,6 +283,55 @@ class ScoringService:
             f"Fit {fit_score}% with {opportunity.estimatedValueLabel.lower()} upside and "
             f"{opportunity.applicationEffort.lower()} effort."
         )
+        days_until_deadline = self._days_until(opportunity.deadline)
+        estimated_value_raw = int(opportunity.estimatedValueRaw or 0)
+        estimated_value_unlocked = estimated_value_raw
+        if estimated_value_raw:
+            estimated_value_unlocked = {
+                "apply-now": int(estimated_value_raw * 0.92),
+                "prepare-soon": int(estimated_value_raw * 0.68),
+                "track-later": int(estimated_value_raw * 0.36),
+                "skip": int(estimated_value_raw * 0.12),
+            }[pipeline_stage]
+        elif fit_score:
+            estimated_value_unlocked = int(fit_score * 180)
+
+        value_at_risk = 0
+        if estimated_value_raw:
+            if days_until_deadline is not None and days_until_deadline <= 7:
+                value_at_risk = estimated_value_raw
+            elif days_until_deadline is not None and days_until_deadline <= 30:
+                value_at_risk = int(estimated_value_raw * 0.45)
+            else:
+                value_at_risk = int(estimated_value_raw * 0.15)
+
+        time_saved_estimate = round(
+            max(1.0, min(8.0, (fit_score / 18) + (2.0 if pipeline_stage != "skip" else 0.5))),
+            1,
+        )
+
+        if opportunity.category == "Internship":
+            strategic_value_narrative = "This can strengthen employability and create near-term income upside."
+        elif opportunity.category == "Scholarship":
+            strategic_value_narrative = "This can reduce education costs while improving longer-term academic mobility."
+        elif opportunity.category == "Grant":
+            strategic_value_narrative = "This can unlock startup or project momentum with non-dilutive support."
+        elif opportunity.category == "Certification":
+            strategic_value_narrative = "This can sharpen proof of skill and improve later application quality."
+        else:
+            strategic_value_narrative = "This can create broader strategic value if pursued at the right time."
+
+        if pipeline_stage == "apply-now":
+            why_not_now = "No reason to defer: this is already strong enough to pursue now."
+        elif pipeline_stage == "prepare-soon":
+            if missing_requirements:
+                why_not_now = f"This is not apply-now yet because {', '.join(missing_requirements[:2])} still needs attention."
+            else:
+                why_not_now = "This is close, but effort or readiness still makes immediate execution risky."
+        elif pipeline_stage == "track-later":
+            why_not_now = "This has some fit, but it is not strong enough to outrank your best active opportunities."
+        else:
+            why_not_now = "This is not worth active time yet because the current fit and payoff are too weak."
 
         return {
             "id": opportunity.id,
@@ -283,7 +341,7 @@ class ScoringService:
             "category": opportunity.category,
             "deadline": self.format_deadline(opportunity.deadline),
             "deadlineIso": opportunity.deadline,
-            "daysUntilDeadline": self._days_until(opportunity.deadline),
+            "daysUntilDeadline": days_until_deadline,
             "estimatedValue": opportunity.estimatedValueLabel,
             "estimatedValueRaw": opportunity.estimatedValueRaw or 0,
             "fitScore": fit_score,
@@ -314,12 +372,25 @@ class ScoringService:
                 else "No major blockers surfaced from the current profile."
             ),
             "tradeoff": (
-                "Higher upside but also heavier application effort."
+                "Higher upside, but it demands more preparation time and a stronger application package."
                 if opportunity.applicationEffort == "High"
-                else "Good balance of upside and time required."
+                else (
+                    "Quicker to execute, but the upside may be lower than your heaviest high-value options."
+                    if opportunity.applicationEffort == "Low"
+                    else "Balanced upside and effort, with manageable preparation requirements."
+                )
             ),
             "fitLabel": self.score_label(fit_score),
             "urgencyLabel": self.score_label(urgency_score),
+            "whyNotNow": why_not_now,
+            "estimatedValueUnlocked": estimated_value_unlocked,
+            "valueAtRisk": value_at_risk,
+            "timeSavedEstimate": time_saved_estimate,
+            "strategicValueNarrative": strategic_value_narrative,
+            "economicImpact": (
+                f"Estimated value unlocked is about RM{estimated_value_unlocked:,.0f}. "
+                f"Value at risk is about RM{value_at_risk:,.0f}."
+            ),
         }
 
     def score_label(self, score: int) -> str:
