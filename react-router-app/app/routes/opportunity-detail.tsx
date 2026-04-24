@@ -1,11 +1,16 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
-import { ArrowLeft, CheckCircle2, ExternalLink, Bookmark, Share2, Calendar, MapPin, DollarSign, Clock, Users, Award, TrendingUp, Sparkles, FileText } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ExternalLink, Bookmark, BookmarkCheck, Share2, Calendar, MapPin, DollarSign, Users, Award, TrendingUp, Sparkles, FileText } from 'lucide-react';
 
 export function loader() {
     return {};
 }
 
 export default function OpportunityDetail() {
+    const [bookmarked, setBookmarked] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [applied, setApplied] = useState(false);
+
     return (
         <div className="p-6 max-w-[1400px] mx-auto">
             <Link to="/opportunities" className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
@@ -34,8 +39,24 @@ export default function OpportunityDetail() {
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50"><Share2 className="w-5 h-5 text-gray-600" /></button>
-                                <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50"><Bookmark className="w-5 h-5 text-gray-600" /></button>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard?.writeText(window.location.href);
+                                    }}
+                                    className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                                    title="Copy link"
+                                >
+                                    <Share2 className="w-5 h-5 text-gray-600" />
+                                </button>
+                                <button
+                                    onClick={() => setBookmarked(b => !b)}
+                                    className={`p-2 border rounded-lg transition-colors ${bookmarked ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                                    title={bookmarked ? 'Remove bookmark' : 'Bookmark'}
+                                >
+                                    {bookmarked
+                                        ? <BookmarkCheck className="w-5 h-5 text-indigo-600" />
+                                        : <Bookmark className="w-5 h-5 text-gray-600" />}
+                                </button>
                             </div>
                         </div>
 
@@ -102,7 +123,13 @@ export default function OpportunityDetail() {
                                 <div className="flex-1">
                                     <div className="font-semibold text-sm mb-1">Recommended Action: Apply Now</div>
                                     <div className="text-sm text-gray-700 mb-3">High fit and strong alignment. Deadline in 20 days — apply early to increase your chances.</div>
-                                    <button className="bg-green-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700">Start Application</button>
+                                    {applied ? (
+                                        <div className="flex items-center gap-2 bg-green-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium w-fit">
+                                            <CheckCircle2 className="w-4 h-4" /> Application Started!
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => setApplied(true)} className="bg-green-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700">Start Application</button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -141,7 +168,9 @@ export default function OpportunityDetail() {
                                     <div>
                                         <div className="text-sm font-medium mb-1">{doc.name}</div>
                                         <div className={`text-xs mb-1 ${doc.status === 'Required' ? 'text-green-600' : doc.status === 'Recommended' ? 'text-orange-600' : 'text-gray-500'}`}>{doc.status}</div>
-                                        {doc.action && <button className="text-xs text-indigo-600 hover:text-indigo-700">{doc.action}</button>}
+                                        {doc.action && (
+                                            <Link to="/documents" className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline">{doc.action}</Link>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -156,7 +185,7 @@ export default function OpportunityDetail() {
                             {[
                                 { label: 'Review role and requirements', done: true },
                                 { label: 'Prepare and tailor your resume', done: true },
-                                { label: 'Complete application form', done: false },
+                                { label: 'Complete application form', done: applied },
                                 { label: 'Take online assessments', done: false },
                                 { label: 'Attend virtual interview', done: false },
                                 { label: 'Final interview', done: false },
@@ -198,17 +227,28 @@ export default function OpportunityDetail() {
                             <h3 className="font-semibold">AI Copilot</h3>
                         </div>
                         <p className="text-sm text-gray-700 mb-4">Your readiness is Good (72%). Let's unlock more value together.</p>
-                        <button className="w-full bg-indigo-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-indigo-700">Show me how</button>
+                        <Link to="/ai-advisor" className="w-full bg-indigo-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center">
+                            Show me how
+                        </Link>
                     </div>
 
                     <div className="bg-white rounded-xl border border-gray-200 p-5">
                         <h3 className="font-semibold mb-3">Quick Actions</h3>
                         <div className="space-y-2">
-                            <button className="w-full text-left bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-indigo-700 flex items-center gap-2">
+                            <a
+                                href="https://www.petronas.com/careers"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full text-left bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                            >
                                 <ExternalLink className="w-4 h-4" /> Apply on Official Site
-                            </button>
-                            <button className="w-full text-left border border-gray-200 text-sm px-4 py-2.5 rounded-lg hover:bg-gray-50 flex items-center gap-2">
-                                <Calendar className="w-4 h-4" /> Save for Later
+                            </a>
+                            <button
+                                onClick={() => setSaved(s => !s)}
+                                className={`w-full text-left text-sm px-4 py-2.5 rounded-lg flex items-center gap-2 transition-colors ${saved ? 'border border-indigo-300 bg-indigo-50 text-indigo-600' : 'border border-gray-200 hover:bg-gray-50'}`}
+                            >
+                                {saved ? <BookmarkCheck className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+                                {saved ? 'Saved!' : 'Save for Later'}
                             </button>
                         </div>
                     </div>

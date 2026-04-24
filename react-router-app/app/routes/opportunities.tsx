@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Sparkles, Bookmark, ChevronDown, Grid3x3, List, X, CheckCircle2, Star, TrendingUp } from 'lucide-react';
+import { Sparkles, Bookmark, BookmarkCheck, ChevronDown, Grid3x3, List, X, CheckCircle2, Star, TrendingUp } from 'lucide-react';
 
 export function loader() {
   return {};
@@ -8,6 +8,23 @@ export function loader() {
 
 export default function Opportunities() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeSort, setActiveSort] = useState('Best Match');
+  const [filters, setFilters] = useState([
+    { label: 'Course', value: 'Computer Science' },
+    { label: 'Year', value: '3rd Year' },
+    { label: 'CGPA', value: '3.60 - 3.74' },
+    { label: 'Goal', value: 'Industry Experience' },
+    { label: 'Effort', value: 'Any' },
+    { label: 'Deadline Urgency', value: 'Any' },
+    { label: 'Location', value: 'Any' },
+  ]);
+
+  const removeFilter = (label: string) => {
+    setFilters(prev => prev.filter(f => f.label !== label));
+  };
+
+  const clearAllFilters = () => setFilters([]);
 
   return (
     <div className="p-6 max-w-[1800px] mx-auto">
@@ -16,7 +33,10 @@ export default function Opportunities() {
           <h1 className="text-2xl font-semibold mb-1">Opportunities</h1>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
+          <button
+            onClick={() => alert('Saved searches feature coming soon!')}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
+          >
             <Bookmark className="w-4 h-4" />
             Saved Searches
           </button>
@@ -24,12 +44,15 @@ export default function Opportunities() {
       </div>
 
       <div className="flex items-center gap-6 mb-6 border-b border-gray-200">
-        <button className="pb-3 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600">All</button>
-        <button className="pb-3 text-sm text-gray-600 hover:text-gray-900">Scholarships</button>
-        <button className="pb-3 text-sm text-gray-600 hover:text-gray-900">Internships</button>
-        <button className="pb-3 text-sm text-gray-600 hover:text-gray-900">Competitions</button>
-        <button className="pb-3 text-sm text-gray-600 hover:text-gray-900">Grants</button>
-        <button className="pb-3 text-sm text-gray-600 hover:text-gray-900">Certifications</button>
+        {['All', 'Scholarships', 'Internships', 'Competitions', 'Grants', 'Certifications'].map(cat => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className={`pb-3 text-sm ${activeCategory === cat ? 'font-medium text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
@@ -37,17 +60,14 @@ export default function Opportunities() {
           <Sparkles className="w-5 h-5 text-indigo-600" />
           <span className="text-sm font-medium">AI Filters</span>
           <span className="text-xs text-gray-500">Refine opportunities based on your profile and preferences</span>
-          <button className="ml-auto text-sm text-indigo-600 hover:text-indigo-700">Clear all</button>
-          <button className="text-sm text-indigo-600 hover:text-indigo-700 px-3 py-1.5 bg-indigo-50 rounded-lg">Edit Filters</button>
+          <button onClick={clearAllFilters} className="ml-auto text-sm text-indigo-600 hover:text-indigo-700">Clear all</button>
+          <Link to="/profile" className="text-sm text-indigo-600 hover:text-indigo-700 px-3 py-1.5 bg-indigo-50 rounded-lg">Edit Filters</Link>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <FilterChip label="Course" value="Computer Science" />
-          <FilterChip label="Year" value="3rd Year" />
-          <FilterChip label="CGPA" value="3.60 - 3.74" />
-          <FilterChip label="Goal" value="Industry Experience" />
-          <FilterChip label="Effort" value="Any" />
-          <FilterChip label="Deadline Urgency" value="Any" />
-          <FilterChip label="Location" value="Any" />
+          {filters.map(f => (
+            <FilterChip key={f.label} label={f.label} value={f.value} onRemove={() => removeFilter(f.label)} />
+          ))}
+          {filters.length === 0 && <span className="text-xs text-gray-400">No filters active</span>}
         </div>
       </div>
 
@@ -56,10 +76,15 @@ export default function Opportunities() {
           <div className="text-sm text-gray-600">48 opportunities found</div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Sort by:</span>
-            <button className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-md">Best Match</button>
-            <button className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md">Highest ROI</button>
-            <button className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md">Most Urgent</button>
-            <button className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md">Low Effort</button>
+            {['Best Match', 'Highest ROI', 'Most Urgent', 'Low Effort'].map(sort => (
+              <button
+                key={sort}
+                onClick={() => setActiveSort(sort)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeSort === sort ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                {sort}
+              </button>
+            ))}
           </div>
         </div>
         <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1">
@@ -142,7 +167,10 @@ export default function Opportunities() {
             />
           </div>
           <div className="mt-6 flex justify-center">
-            <button className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+            <button
+              onClick={() => alert('More opportunities loading soon!')}
+              className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+            >
               Load more <ChevronDown className="w-4 h-4 inline ml-2" />
             </button>
           </div>
@@ -194,9 +222,12 @@ export default function Opportunities() {
                 </div>
               ))}
             </div>
-            <button className="w-full bg-indigo-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-indigo-700">
+            <Link
+              to="/ai-advisor?q=Compare+my+top+3+opportunities"
+              className="w-full bg-indigo-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center"
+            >
               View full comparison
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -204,12 +235,12 @@ export default function Opportunities() {
   );
 }
 
-function FilterChip({ label, value }: { label: string; value: string }) {
+function FilterChip({ label, value, onRemove }: { label: string; value: string; onRemove: () => void }) {
   return (
     <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5">
       <span className="text-xs text-gray-500">{label}:</span>
       <span className="text-xs font-medium">{value}</span>
-      <button className="hover:bg-gray-200 rounded p-0.5">
+      <button onClick={onRemove} className="hover:bg-gray-200 rounded p-0.5">
         <X className="w-3 h-3 text-gray-500" />
       </button>
     </div>
@@ -221,6 +252,8 @@ function OpportunityCard({ id, tag, verified, logo, title, company, category, de
   category: string; deadline: string; estimatedValue: string; fitScore: number; effort: string;
   eligibility: string; roiScore: number; recommendation: string; topPick?: boolean;
 }) {
+  const [bookmarked, setBookmarked] = useState(false);
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow relative">
       {topPick && (
@@ -244,8 +277,10 @@ function OpportunityCard({ id, tag, verified, logo, title, company, category, de
             <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded mt-1 inline-block">{category}</span>
           </div>
         </div>
-        <button className="p-1.5 hover:bg-gray-100 rounded">
-          <Bookmark className="w-4 h-4 text-gray-400" />
+        <button onClick={() => setBookmarked(b => !b)} className="p-1.5 hover:bg-gray-100 rounded" title={bookmarked ? 'Remove bookmark' : 'Bookmark'}>
+          {bookmarked
+            ? <BookmarkCheck className="w-4 h-4 text-indigo-600" />
+            : <Bookmark className="w-4 h-4 text-gray-400" />}
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3 mb-4">

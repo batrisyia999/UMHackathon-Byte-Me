@@ -1,4 +1,5 @@
-import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { Sparkles, CheckCircle2, Plus } from 'lucide-react';
 import { MOCK_USER } from '../lib/mockData';
 
 export function loader() {
@@ -7,6 +8,29 @@ export function loader() {
 
 export default function Profile() {
     const user = MOCK_USER;
+    const [saved, setSaved] = useState(false);
+    const [timeAvailability, setTimeAvailability] = useState<string>(user.timeAvailability);
+    const [readinessLevel, setReadinessLevel] = useState<string>(user.readinessLevel);
+    const [interests, setInterests] = useState(user.interests);
+    const [newInterest, setNewInterest] = useState('');
+    const [showAddInterest, setShowAddInterest] = useState(false);
+
+    const handleSaveDraft = () => {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
+
+    const handleAddInterest = () => {
+        if (newInterest.trim() && !interests.includes(newInterest.trim())) {
+            setInterests(prev => [...prev, newInterest.trim()]);
+        }
+        setNewInterest('');
+        setShowAddInterest(false);
+    };
+
+    const removeInterest = (interest: string) => {
+        setInterests(prev => prev.filter(i => i !== interest));
+    };
 
     return (
         <div className="p-6 max-w-[1400px] mx-auto">
@@ -34,8 +58,11 @@ export default function Profile() {
                                     <div className="text-sm text-gray-600">Tell us all about you</div>
                                 </div>
                             </div>
-                            <button className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
-                                Save Draft
+                            <button
+                                onClick={handleSaveDraft}
+                                className={`px-4 py-2 text-sm border rounded-lg transition-colors ${saved ? 'border-green-300 bg-green-50 text-green-600' : 'border-gray-200 hover:bg-gray-50'}`}
+                            >
+                                {saved ? '✓ Draft Saved' : 'Save Draft'}
                             </button>
                         </div>
 
@@ -45,8 +72,10 @@ export default function Profile() {
                                     <label className="block text-sm font-medium mb-2">
                                         Course / Faculty
                                     </label>
-                                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                         <option>{user.course}</option>
+                                        <option>Computer Engineering</option>
+                                        <option>Information Systems</option>
                                     </select>
                                     <div className="text-xs text-gray-600 mt-1">{user.faculty}</div>
                                 </div>
@@ -54,8 +83,11 @@ export default function Profile() {
                                     <label className="block text-sm font-medium mb-2">
                                         Current Year
                                     </label>
-                                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg">
+                                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                         <option>Year {user.year}</option>
+                                        <option>Year 1</option>
+                                        <option>Year 2</option>
+                                        <option>Year 4</option>
                                     </select>
                                     <div className="text-xs text-gray-600 mt-1">{user.studyLevel}</div>
                                 </div>
@@ -67,13 +99,13 @@ export default function Profile() {
                                     <input
                                         type="text"
                                         defaultValue={user.cgpaMin}
-                                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg"
+                                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     />
                                     <span className="self-center">-</span>
                                     <input
                                         type="text"
                                         defaultValue={user.cgpaMax}
-                                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg"
+                                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     />
                                 </div>
                             </div>
@@ -83,17 +115,41 @@ export default function Profile() {
                                     Areas of Interest
                                 </label>
                                 <div className="flex flex-wrap gap-2">
-                                    {user.interests.map((interest) => (
+                                    {interests.map((interest) => (
                                         <span
                                             key={interest}
-                                            className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full text-sm"
+                                            className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full text-sm flex items-center gap-1 group"
                                         >
                                             {interest}
+                                            <button
+                                                onClick={() => removeInterest(interest)}
+                                                className="opacity-0 group-hover:opacity-100 ml-1 text-indigo-400 hover:text-indigo-700 text-xs leading-none"
+                                            >
+                                                ×
+                                            </button>
                                         </span>
                                     ))}
-                                    <button className="border border-gray-200 px-3 py-1.5 rounded-full text-sm hover:bg-gray-50">
-                                        + Add
-                                    </button>
+                                    {showAddInterest ? (
+                                        <div className="flex items-center gap-1">
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                value={newInterest}
+                                                onChange={e => setNewInterest(e.target.value)}
+                                                onKeyDown={e => { if (e.key === 'Enter') handleAddInterest(); if (e.key === 'Escape') setShowAddInterest(false); }}
+                                                placeholder="Type interest..."
+                                                className="border border-gray-300 rounded-full px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-36"
+                                            />
+                                            <button onClick={handleAddInterest} className="text-xs bg-indigo-600 text-white px-2 py-1 rounded-full hover:bg-indigo-700">Add</button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowAddInterest(true)}
+                                            className="border border-gray-200 px-3 py-1.5 rounded-full text-sm hover:bg-gray-50 flex items-center gap-1"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" /> Add
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -102,22 +158,12 @@ export default function Profile() {
                                     Primary Goal (Select up to 2)
                                 </label>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <label className="flex items-center gap-3 p-3 border border-indigo-200 bg-indigo-50 rounded-lg cursor-pointer">
-                                        <input type="checkbox" className="w-4 h-4" defaultChecked />
-                                        <span className="text-sm">Internship</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                        <input type="checkbox" className="w-4 h-4" />
-                                        <span className="text-sm">Full-time Job</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                        <input type="checkbox" className="w-4 h-4" />
-                                        <span className="text-sm">Scholarship</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                        <input type="checkbox" className="w-4 h-4" />
-                                        <span className="text-sm">Research</span>
-                                    </label>
+                                    {['Internship', 'Full-time Job', 'Scholarship', 'Research'].map(goal => (
+                                        <label key={goal} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer ${goal === 'Internship' ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                                            <input type="checkbox" className="w-4 h-4 accent-indigo-600" defaultChecked={goal === 'Internship'} />
+                                            <span className="text-sm">{goal}</span>
+                                        </label>
+                                    ))}
                                 </div>
                             </div>
 
@@ -126,19 +172,18 @@ export default function Profile() {
                                     Time Availability (per week)
                                 </label>
                                 <div className="flex gap-3 flex-wrap">
-                                    {['< 5 hrs', '5 - 10 hrs', '10 - 15 hrs', '15+ hrs'].map(
-                                        (option) => (
-                                            <button
-                                                key={option}
-                                                className={`px-4 py-2 rounded-lg text-sm ${option === user.timeAvailability
-                                                        ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 font-medium'
-                                                        : 'border border-gray-200 hover:bg-gray-50'
-                                                    }`}
-                                            >
-                                                {option}
-                                            </button>
-                                        )
-                                    )}
+                                    {['< 5 hrs', '5 - 10 hrs', '10 - 15 hrs', '15+ hrs'].map((option) => (
+                                        <button
+                                            key={option}
+                                            onClick={() => setTimeAvailability(option)}
+                                            className={`px-4 py-2 rounded-lg text-sm transition-colors ${option === timeAvailability
+                                                ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 font-medium'
+                                                : 'border border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {option}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
@@ -147,19 +192,18 @@ export default function Profile() {
                                     Readiness Level
                                 </label>
                                 <div className="flex gap-3 flex-wrap">
-                                    {['Just Exploring', 'Actively Preparing', 'Ready to Apply'].map(
-                                        (option) => (
-                                            <button
-                                                key={option}
-                                                className={`px-4 py-2 rounded-lg text-sm ${option === user.readinessLevel
-                                                        ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 font-medium'
-                                                        : 'border border-gray-200 hover:bg-gray-50'
-                                                    }`}
-                                            >
-                                                {option}
-                                            </button>
-                                        )
-                                    )}
+                                    {['Just Exploring', 'Actively Preparing', 'Ready to Apply'].map((option) => (
+                                        <button
+                                            key={option}
+                                            onClick={() => setReadinessLevel(option)}
+                                            className={`px-4 py-2 rounded-lg text-sm transition-colors ${option === readinessLevel
+                                                ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 font-medium'
+                                                : 'border border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {option}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -267,8 +311,11 @@ export default function Profile() {
                         </div>
                     </div>
 
-                    <button className="w-full bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700">
-                        Generate my opportunity strategy
+                    <button
+                        onClick={handleSaveDraft}
+                        className={`w-full text-sm font-medium py-2.5 rounded-lg transition-colors ${saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                    >
+                        {saved ? '✓ Profile Saved!' : 'Generate my opportunity strategy'}
                     </button>
                 </div>
             </div>
@@ -287,6 +334,8 @@ function AssetCard({
     filename?: string;
     link?: string;
 }) {
+    const [isUpdating, setIsUpdating] = useState(false);
+
     return (
         <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
@@ -296,14 +345,31 @@ function AssetCard({
             <div className="text-xs text-green-600 mb-1">{status}</div>
             {filename && <div className="text-xs text-gray-600">{filename}</div>}
             {link && (
-                <div className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer">
+                <div className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer hover:underline">
                     {link}
                 </div>
             )}
             <div className="mt-3 flex gap-2">
-                <button className="text-xs text-indigo-600 hover:text-indigo-700">Update</button>
+                <label className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer">
+                    {isUpdating ? 'Uploading...' : 'Update'}
+                    <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                                setIsUpdating(true);
+                                setTimeout(() => setIsUpdating(false), 1500);
+                            }
+                        }}
+                    />
+                </label>
                 {!link && (
-                    <button className="text-xs text-gray-600 hover:text-gray-900">Disconnect</button>
+                    <button
+                        onClick={() => { if (confirm(`Disconnect ${title}?`)) {} }}
+                        className="text-xs text-gray-600 hover:text-gray-900"
+                    >
+                        Disconnect
+                    </button>
                 )}
             </div>
         </div>

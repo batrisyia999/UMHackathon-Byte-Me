@@ -1,10 +1,15 @@
-import { TrendingUp, Download, Info, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { TrendingUp, Download, Sparkles } from 'lucide-react';
+import { Link } from 'react-router';
 
 export function loader() {
     return {};
 }
 
 export default function Insights() {
+    const [exported, setExported] = useState(false);
+    const [activeTab, setActiveTab] = useState<'value' | 'time' | 'matches'>('value');
+
     const metrics = [
         { icon: '💰', title: 'Total Accessible Opportunity Value', value: 'RM 315,680', change: 28 },
         { icon: '⚠️', title: 'Value at Risk (Expiring Soon)', value: 'RM 47,260', change: 12, warning: true },
@@ -23,6 +28,20 @@ export default function Insights() {
     const bars = [120, 140, 165, 190, 210, 240, 280, 315];
     const months = ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'];
 
+    const handleExport = () => {
+        setExported(true);
+        // Simulate file download via blob
+        const content = `Insights Report\n\nTotal Value: RM 315,680\nTime Saved: 68.4 hrs\nMatches: 48\nGenerated: ${new Date().toLocaleDateString()}`;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'insights-report.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+        setTimeout(() => setExported(false), 3000);
+    };
+
     return (
         <div className="p-6 max-w-[1600px] mx-auto">
             <div className="flex items-center justify-between mb-6">
@@ -30,8 +49,12 @@ export default function Insights() {
                     <h1 className="text-2xl font-semibold mb-1">Insights & Economic Impact</h1>
                     <p className="text-gray-600">Your economic empowerment story — measured, tracked, and growing.</p>
                 </div>
-                <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
-                    <Download className="w-4 h-4" /> Export Report
+                <button
+                    onClick={handleExport}
+                    className={`px-4 py-2 border rounded-lg text-sm flex items-center gap-2 transition-colors ${exported ? 'border-green-300 bg-green-50 text-green-600' : 'border-gray-200 hover:bg-gray-50'}`}
+                >
+                    <Download className="w-4 h-4" />
+                    {exported ? '✓ Exported!' : 'Export Report'}
                 </button>
             </div>
 
@@ -61,7 +84,12 @@ export default function Insights() {
                         <div className="text-sm text-gray-600 mb-1">Expiring Within 30 Days</div>
                         <div className="text-2xl font-semibold text-orange-600">RM 21,840</div>
                     </div>
-                    <button className="w-full bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700">View at-risk opportunities</button>
+                    <Link
+                        to="/opportunities"
+                        className="w-full bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700 flex items-center justify-center"
+                    >
+                        View at-risk opportunities
+                    </Link>
                 </div>
 
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -79,7 +107,12 @@ export default function Insights() {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        {[{ color: 'bg-indigo-600', label: 'Scholarships', value: 'RM 142,560 (45%)' }, { color: 'bg-green-500', label: 'Grants', value: 'RM 104,760 (22%)' }, { color: 'bg-orange-500', label: 'Internships', value: 'RM 54,120 (17%)' }, { color: 'bg-yellow-500', label: 'Competitions', value: 'RM 22,480 (7%)' }].map((item) => (
+                        {[
+                            { color: 'bg-indigo-600', label: 'Scholarships', value: 'RM 142,560 (45%)' },
+                            { color: 'bg-green-500', label: 'Grants', value: 'RM 104,760 (22%)' },
+                            { color: 'bg-orange-500', label: 'Internships', value: 'RM 54,120 (17%)' },
+                            { color: 'bg-yellow-500', label: 'Competitions', value: 'RM 22,480 (7%)' },
+                        ].map((item) => (
                             <div key={item.label} className="flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-2"><div className={`w-3 h-3 ${item.color} rounded`}></div>{item.label}</div>
                                 <span className="font-medium">{item.value}</span>
@@ -91,7 +124,12 @@ export default function Insights() {
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <h3 className="font-semibold mb-4">Deadline Urgency</h3>
                     <div className="space-y-2">
-                        {[{ color: 'bg-red-500', label: 'Expiring in 0-7 days', value: '9 (19%)' }, { color: 'bg-orange-500', label: 'Expiring in 8-30 days', value: '15 (31%)' }, { color: 'bg-yellow-500', label: 'Expiring in 31-60 days', value: '12 (25%)' }, { color: 'bg-green-500', label: 'Expiring in 60+ days', value: '12 (25%)' }].map((item) => (
+                        {[
+                            { color: 'bg-red-500', label: 'Expiring in 0-7 days', value: '9 (19%)' },
+                            { color: 'bg-orange-500', label: 'Expiring in 8-30 days', value: '15 (31%)' },
+                            { color: 'bg-yellow-500', label: 'Expiring in 31-60 days', value: '12 (25%)' },
+                            { color: 'bg-green-500', label: 'Expiring in 60+ days', value: '12 (25%)' },
+                        ].map((item) => (
                             <div key={item.label} className="flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-2"><div className={`w-3 h-3 ${item.color} rounded-full`}></div>{item.label}</div>
                                 <span className="font-medium">{item.value}</span>
@@ -111,21 +149,44 @@ export default function Insights() {
                                 <div className="flex-1">
                                     <div className="text-sm font-medium mb-1">{b.title}</div>
                                     <div className="bg-gray-200 rounded-full h-1.5">
-                                        <div className={`h-1.5 rounded-full ${b.match >= 70 ? 'bg-green-500' : b.match >= 50 ? 'bg-orange-500' : 'bg-red-500'}`} style={{ width: `${b.match}%` }}></div>
+                                        <div
+                                            className={`h-1.5 rounded-full ${b.match >= 70 ? 'bg-green-500' : b.match >= 50 ? 'bg-orange-500' : 'bg-red-500'}`}
+                                            style={{ width: `${b.match}%` }}
+                                        ></div>
                                     </div>
                                 </div>
                                 <div className="text-sm text-gray-600">{b.match}%</div>
                             </div>
                         ))}
                     </div>
+                    <Link to="/readiness" className="mt-4 text-sm text-indigo-600 hover:underline block">
+                        View full readiness tracker →
+                    </Link>
                 </div>
 
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
-                    <h3 className="font-semibold mb-4">Pipeline Growth Over Time</h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold">Pipeline Growth Over Time</h3>
+                        <div className="flex gap-1">
+                            {(['value', 'time', 'matches'] as const).map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-2 py-1 text-xs rounded transition-colors ${activeTab === tab ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    {tab === 'value' ? 'Value' : tab === 'time' ? 'Time' : 'Matches'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <div className="h-48 flex items-end gap-2 mb-4">
                         {bars.map((value, i) => (
                             <div key={i} className="flex-1 flex flex-col items-center">
-                                <div className="w-full bg-indigo-100 rounded-t" style={{ height: `${(value / 320) * 100}%` }}>
+                                <div
+                                    className="w-full bg-indigo-100 rounded-t cursor-pointer hover:bg-indigo-200 transition-colors"
+                                    style={{ height: `${(value / 320) * 100}%` }}
+                                    title={`${months[i]}: RM ${value}k`}
+                                >
                                     <div className="w-full bg-indigo-600 rounded-t" style={{ height: '70%' }}></div>
                                 </div>
                                 <div className="text-xs text-gray-500 mt-2">{months[i]}</div>
@@ -139,7 +200,11 @@ export default function Insights() {
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <h3 className="font-semibold mb-4">Economic Impact Summary</h3>
                     <div className="space-y-4">
-                        {[{ icon: '💰', label: 'Potential Funding Impact', value: 'RM 315,680', sub: 'Total accessible value', color: 'text-green-600' }, { icon: '⏱️', label: 'Time Efficiency Gain', value: '68.4 hrs', sub: 'Equivalent to 8.6 working days', color: 'text-blue-600' }, { icon: '📈', label: 'Future Earning Potential', value: 'High', sub: 'Based on skills & opportunities', color: 'text-purple-600' }].map((item) => (
+                        {[
+                            { icon: '💰', label: 'Potential Funding Impact', value: 'RM 315,680', sub: 'Total accessible value', color: 'text-green-600' },
+                            { icon: '⏱️', label: 'Time Efficiency Gain', value: '68.4 hrs', sub: 'Equivalent to 8.6 working days', color: 'text-blue-600' },
+                            { icon: '📈', label: 'Future Earning Potential', value: 'High', sub: 'Based on skills & opportunities', color: 'text-purple-600' },
+                        ].map((item) => (
                             <div key={item.label} className="flex items-start gap-3">
                                 <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-xl">{item.icon}</span></div>
                                 <div>
@@ -158,7 +223,11 @@ export default function Insights() {
                         <h3 className="font-semibold">AI Insights</h3>
                     </div>
                     <div className="space-y-3">
-                        {[{ label: 'Strong progress!', color: 'text-green-600', text: "You're building real momentum. Here's what the data reveals." }, { label: 'Expiring Value Alert', color: 'text-orange-600', text: 'RM 21,840 is expiring within 30 days. Take action on 14 opportunities.' }, { label: 'Category Insight', color: 'text-blue-600', text: 'Scholarships make up 45% of your pipeline. Consider diversifying.' }].map((item) => (
+                        {[
+                            { label: 'Strong progress!', color: 'text-green-600', text: "You're building real momentum. Here's what the data reveals." },
+                            { label: 'Expiring Value Alert', color: 'text-orange-600', text: 'RM 21,840 is expiring within 30 days. Take action on 14 opportunities.' },
+                            { label: 'Category Insight', color: 'text-blue-600', text: 'Scholarships make up 45% of your pipeline. Consider diversifying.' },
+                        ].map((item) => (
                             <div key={item.label} className="bg-white rounded-lg p-4">
                                 <div className={`text-xs font-medium ${item.color} mb-1`}>{item.label}</div>
                                 <div className="text-sm text-gray-900">{item.text}</div>
@@ -186,7 +255,12 @@ export default function Insights() {
                     <div className="bg-indigo-50 rounded-lg p-3 mb-4">
                         <div className="text-xs text-gray-700">This could unlock RM 194,000+ in additional opportunities.</div>
                     </div>
-                    <button className="w-full bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700">Find top matches →</button>
+                    <Link
+                        to="/opportunities?sort=internships"
+                        className="w-full bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700 flex items-center justify-center"
+                    >
+                        Find top matches →
+                    </Link>
                 </div>
             </div>
         </div>

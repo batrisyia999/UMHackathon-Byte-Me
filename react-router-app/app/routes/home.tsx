@@ -12,6 +12,8 @@ import {
   Calendar,
   Sparkles,
   Edit,
+  BookmarkCheck,
+  Bookmark,
 } from 'lucide-react';
 
 import {
@@ -367,6 +369,8 @@ function WeeklyPlannerCard({
 }
 
 function FeaturedRecommendation({ opportunity: opp }: { opportunity: Opportunity }) {
+  const [saved, setSaved] = useState(false);
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="text-xs text-indigo-600 font-medium mb-3">Top Pick for You</div>
@@ -437,9 +441,12 @@ function FeaturedRecommendation({ opportunity: opp }: { opportunity: Opportunity
       >
         View Opportunity
       </Link>
-      <button className="w-full mt-2 border border-gray-200 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-        <Calendar className="w-4 h-4" />
-        Save for Later
+      <button
+        onClick={() => setSaved((s) => !s)}
+        className={`w-full mt-2 border text-sm font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 ${saved ? 'border-indigo-300 bg-indigo-50 text-indigo-600' : 'border-gray-200 hover:bg-gray-50'}`}
+      >
+        {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+        {saved ? 'Saved!' : 'Save for Later'}
       </button>
     </div>
   );
@@ -450,7 +457,7 @@ function WeeklyInsightsCard({ insight }: { insight: typeof MOCK_WEEKLY_INSIGHT }
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">This Week's Insights</h3>
-        <button className="text-xs text-gray-500">This Week</button>
+        <span className="text-xs text-gray-500">This Week</span>
       </div>
       <div className="space-y-4">
         <InsightRow
