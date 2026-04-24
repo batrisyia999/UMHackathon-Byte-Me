@@ -10,7 +10,7 @@ import {
   Bell,
   Search
 } from 'lucide-react';
-import { MOCK_USER } from '../lib/mockData';
+import { MOCK_USER } from '../../app/lib/mockData';
 
 const NAVIGATION = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
