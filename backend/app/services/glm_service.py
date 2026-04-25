@@ -19,7 +19,7 @@ class GLMService:
         self.store = store
         self.cache_path = self.store.statePath("ai_cache.json")
         self.cache: dict[str, Any] = self.store.load_json(self.cache_path, default={})
-        self.short_timeout_seconds = max(4, min(self.settings.zAiTimeoutSeconds, 12))
+        self.short_timeout_seconds = max(4, self.settings.zAiTimeoutSeconds)
         self._stats: dict[str, Any] = {
             "cacheHits": 0,
             "cacheMisses": 0,
@@ -116,16 +116,20 @@ class GLMService:
         max_tokens: int,
         reasoning_effort: str,
     ) -> dict[str, Any]:
+        effective_max_tokens = max_tokens
+        if self.settings.zAiModel.lower().startswith("ilmu-"):
+            effective_max_tokens = max(max_tokens, 3600)
+        thinking_type = "enabled" if reasoning_effort == "high" else "disabled"
         return {
             "model": self.settings.zAiModel,
             "temperature": 0.15,
             "stream": False,
             "response_format": {"type": "json_object"},
-            "reasoning_effort": reasoning_effort,
-            "max_tokens": max_tokens,
+            "thinking": {"type": thinking_type},
+            "max_tokens": effective_max_tokens,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": json.dumps(user_payload, ensure_ascii=True, indent=2)},
+                {"role": "user", "content": json.dumps(user_payload, ensure_ascii=True)},
             ],
         }
 
@@ -1358,6 +1362,8 @@ class GLMService:
         history: list[dict[str, Any]],
         context: dict[str, Any],
     ) -> dict[str, Any]:
+        readiness = context.get("readiness", {})
+        planner = context.get("planner", {})
         return {
             "system_prompt": (
                 "You are OpportunIQ's AI advisor for university students. "
@@ -1372,9 +1378,18 @@ class GLMService:
                 "history": history[-4:],
                 "context": {
                     "topOpportunities": context.get("topOpportunities", [])[:6],
-                    "scholarshipOpportunities": context.get("scholarshipOpportunities", [])[:4],
-                    "readiness": context.get("readiness", {}),
-                    "planner": context.get("planner", {}),
+                    "scholarshipOpportunities": context.get("scholarshipOpportunities", [])[:3],
+                    "readiness": {
+                        "overall": readiness.get("overall"),
+                        "modules": readiness.get("modules", [])[:4],
+                        "blockers": readiness.get("blockers", [])[:2],
+                    },
+                    "planner": {
+                        "tasks": planner.get("tasks", [])[:4],
+                        "categories": planner.get("categories", []),
+                        "focusScore": planner.get("focusScore"),
+                        "totalEstimatedTimeHours": planner.get("totalEstimatedTimeHours"),
+                    },
                     "behaviorSignals": context.get("behaviorSignals", {}),
                 },
                 "timestamp": datetime.now(UTC).isoformat(),

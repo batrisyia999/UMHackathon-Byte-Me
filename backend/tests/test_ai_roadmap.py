@@ -180,14 +180,21 @@ def test_prompt_builders_are_bounded_and_mode_specific(glm_service):
         {
             "topOpportunities": [opportunity] * 10,
             "scholarshipOpportunities": [opportunity] * 6,
-            "readiness": {},
-            "planner": {},
+            "readiness": {"overall": 68, "modules": _sample_modules() * 2, "blockers": _sample_modules()},
+            "planner": {
+                "tasks": _sample_tasks() * 3,
+                "categories": [{"title": "Apply Now", "count": 2, "effort": "3 hrs", "roi": "High ROI"}],
+                "focusScore": 80,
+                "totalEstimatedTimeHours": 6.5,
+            },
             "behaviorSignals": {},
         },
     )
     assert len(advisor["user_payload"]["history"]) == 4
     assert len(advisor["user_payload"]["context"]["topOpportunities"]) == 6
-    assert len(advisor["user_payload"]["context"]["scholarshipOpportunities"]) == 4
+    assert len(advisor["user_payload"]["context"]["scholarshipOpportunities"]) == 3
+    assert len(advisor["user_payload"]["context"]["readiness"]["modules"]) == 4
+    assert len(advisor["user_payload"]["context"]["planner"]["tasks"]) == 4
 
 
 def test_persistent_cache_hits_across_service_instances(glm_service, monkeypatch):

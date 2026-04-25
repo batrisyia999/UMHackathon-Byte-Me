@@ -43,7 +43,10 @@ class Settings(BaseModel):
         )
     )
     zAiFallbackModel: str = Field(
-        default_factory=lambda: os.getenv("ILMU_FALLBACK_MODEL", "ilmu-glm-5.1")
+        default_factory=lambda: os.getenv("ILMU_FALLBACK_MODEL")
+        or os.getenv("ZAI_FALLBACK_MODEL")
+        or os.getenv("GLM_FALLBACK_MODEL")
+        or "ilmu-glm-5.1"
     )
     zAiTimeoutSeconds: int = Field(
         default_factory=lambda: int(os.getenv("ILMU_TIMEOUT_SECONDS", os.getenv("ZAI_TIMEOUT_SECONDS", "30")))
