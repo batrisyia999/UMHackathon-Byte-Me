@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from app.models import CreatePlannerTaskRequest
 from app.services import get_container
 
 router = APIRouter(tags=["planner"])
@@ -16,6 +17,11 @@ def toggle_planner_task(task_id: str) -> dict:
     if task is None:
         raise HTTPException(status_code=404, detail="Planner task not found")
     return task
+
+
+@router.post("/planner/tasks")
+def create_planner_task(payload: CreatePlannerTaskRequest) -> dict:
+    return get_container().screens.create_planner_task(payload.model_dump(exclude_none=True))
 
 
 @router.post("/planner/optimize")

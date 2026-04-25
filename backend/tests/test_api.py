@@ -103,3 +103,98 @@ def test_advisor_chat_uses_question_and_returns_grounded_fallback(client):
     assert payload["source"] == "fallback"
     assert payload["suggestedPrompts"]
     assert any(opportunity_id for opportunity_id in payload["citedOpportunityIds"])
+
+
+def test_legacy_opportunity_aliases_resolve_for_frontend_ids(client):
+    response = client.get("/api/opportunities/petronas-2025")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == "petronas-2026"
+    assert payload["requestedId"] == "petronas-2025"
+
+    google = client.get("/api/opportunities/google-2025")
+    assert google.status_code == 200
+    assert google.json()["id"] == "google-step-2026"
+
+
+def test_opportunities_support_plural_categories_and_human_sort_labels(client):
+    response = client.get("/api/opportunities?category=Internships&sort=Best Match")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["items"]
+    assert all(item["category"] == "Internship" for item in payload["items"])
+    assert "Internships" in payload["availableCategories"]
+
+
+def test_readiness_modules_include_navigation_hrefs(client):
+    response = client.get("/api/readiness")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["modules"]
+    assert payload["modules"][0]["href"].startswith("/")
+
+
+def test_planner_tasks_include_done_alias_and_support_create_task(client):
+    planner = client.get("/api/planner")
+    assert planner.status_code == 200
+    first_task = planner.json()["tasks"][0]
+    assert "done" in first_task
+    assert first_task["done"] == first_task["completed"]
+
+    created = client.post(
+        "/api/planner/tasks",
+        json={
+            "title": "Prep custom task",
+            "subtitle": "Frontend compatibility task",
+            "type": "apply-now",
+            "duration": "30min",
+        },
+    )
+    assert created.status_code == 200
+    assert created.json()["done"] is False
+
+
+def test_pipeline_stage_can_be_manually_overridden(client):
+    response = client.patch(
+        "/api/pipeline/google-step-2025",
+        json={"stage": "track-later"},
+    )
+    assert response.status_code == 200
+    assert response.json()["pipelineStage"] == "track-later"
+
+    pipeline = client.get("/api/pipeline")
+    assert pipeline.status_code == 200
+    moved = next(item for item in pipeline.json()["stages"]["track-later"] if item["id"] == "google-step-2026")
+    assert moved["pipelineStage"] == "track-later"
+
+
+def test_network_supports_connect_and_message_actions(client):
+    network = client.get("/api/network")
+    assert network.status_code == 200
+    assert "connected" in network.json()["suggestedConnections"][0]
+    assert "messaging" in network.json()["connections"][0]
+
+    connected = client.post("/api/network/suggested/suggested-001/connect")
+    assert connected.status_code == 200
+    assert connected.json()["connected"] is True
+
+    messaged = client.post(
+        "/api/network/connections/conn-001/message",
+        json={"message": "Hello mentor"},
+    )
+    assert messaged.status_code == 200
+    assert messaged.json()["message"] == "Hello mentor"
+
+
+def test_insights_and_settings_export_actions_exist(client):
+    insights_export = client.post("/api/insights/export")
+    assert insights_export.status_code == 200
+    assert insights_export.json()["message"]
+
+    deactivate = client.post("/api/settings/deactivate")
+    assert deactivate.status_code == 200
+    assert deactivate.json()["success"] is True
+
+    delete = client.post("/api/settings/delete")
+    assert delete.status_code == 200
+    assert delete.json()["success"] is True

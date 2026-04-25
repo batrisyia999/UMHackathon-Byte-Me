@@ -95,6 +95,9 @@ class ScreenService:
             default={"connections": [], "suggestedConnections": []},
         )
 
+    def _save_network(self, payload: dict[str, Any]) -> None:
+        self.store.save_json(self.store.statePath("network.json"), payload)
+
     def _load_resources(self) -> ResourceState:
         return self.store.load_model(
             self.store.statePath("resources.json"),
@@ -112,6 +115,15 @@ class ScreenService:
     def _save_advisor_history(self, history: list[AdvisorMessageState]) -> None:
         self.store.save_model(self.store.statePath("advisor_history.json"), history)
 
+    def _load_pipeline_overrides(self) -> dict[str, str]:
+        return self.store.load_json(
+            self.store.statePath("pipeline_overrides.json"),
+            default={},
+        )
+
+    def _save_pipeline_overrides(self, overrides: dict[str, str]) -> None:
+        self.store.save_json(self.store.statePath("pipeline_overrides.json"), overrides)
+
     def _profile_summary(self, profile: ProfileState) -> dict[str, Any]:
         return {
             "name": profile.name,
@@ -127,6 +139,97 @@ class ScreenService:
             "interests": profile.interests,
             "assets": [asset.label for asset in profile.assets],
         }
+
+    def _canonical_opportunity_aliases(self) -> dict[str, str]:
+        return {
+            "petronas-2025": "petronas-2026",
+            "google-step-2025": "google-step-2026",
+            "google-2025": "google-step-2026",
+            "maybank-ytp-2025": "maybank-ytp-2026",
+            "maybank-2025": "maybank-ytp-2026",
+            "shell-grad-2026": "shell-grad-2027",
+            "shell-2025": "shell-grad-2027",
+            "microsoft-mlsa-2025": "microsoft-mlsa-2026",
+            "microsoft-2025": "microsoft-mlsa-2026",
+            "adb-japan-2025": "adb-japan-2026",
+            "adb-2025": "adb-japan-2026",
+            "asian-development-bank-2025": "adb-japan-2026",
+            "khazanah-2026": "khazanah-scholar-2027",
+            "khazanah-scholar-2026": "khazanah-scholar-2027",
+            "icpc-2025": "icpc-2026",
+            "hackathon-series-2025": "hackathon-series-2026",
+        }
+
+    def _resolve_opportunity_id(self, opportunity_id: str) -> str:
+        normalized = opportunity_id.strip().lower()
+        alias = self._canonical_opportunity_aliases().get(normalized)
+        if alias:
+            return alias
+
+        company_aliases = {
+            "petronas": "petronas-2026",
+            "google": "google-step-2026",
+            "maybank": "maybank-ytp-2026",
+            "shell": "shell-grad-2027",
+            "microsoft": "microsoft-mlsa-2026",
+            "adb": "adb-japan-2026",
+            "asian-development-bank": "adb-japan-2026",
+            "khazanah": "khazanah-scholar-2027",
+            "icpc": "icpc-2026",
+            "hackathon": "hackathon-series-2026",
+            "experian": "experian-se-2026",
+            "airasia": "airasia-data-2026",
+            "watsons": "watsons-intern-2026",
+            "aws": "aws-cert-challenge-2026",
+            "cradle": "cradle-grant-2026",
+        }
+        for token, canonical in company_aliases.items():
+            if token in normalized:
+                return canonical
+        return opportunity_id
+
+    def _normalize_category_filter(self, category: str | None) -> str | None:
+        if category is None:
+            return None
+        normalized = category.strip().lower()
+        aliases = {
+            "all": "all",
+            "scholarships": "scholarship",
+            "scholarship": "scholarship",
+            "internships": "internship",
+            "internship": "internship",
+            "competitions": "competition",
+            "competition": "competition",
+            "grants": "grant",
+            "grant": "grant",
+            "certifications": "certification",
+            "certification": "certification",
+            "programmes": "programme",
+            "programme": "programme",
+            "programs": "programme",
+            "program": "programme",
+        }
+        return aliases.get(normalized, normalized)
+
+    def _normalize_sort(self, sort: str) -> str:
+        normalized = sort.strip().lower().replace("_", "-").replace(" ", "-")
+        aliases = {
+            "best-match": "best-match",
+            "highest-roi": "highest-roi",
+            "most-urgent": "most-urgent",
+            "low-effort": "low-effort",
+            "sort=internships": "best-match",
+        }
+        return aliases.get(normalized, "best-match")
+
+    def _stage_next_step(self, stage: str) -> str:
+        if stage == "apply-now":
+            return "Start the application this week and submit before the deadline window tightens."
+        if stage == "prepare-soon":
+            return "Close the missing readiness gaps first, then begin the application."
+        if stage == "track-later":
+            return "Save it, monitor the deadline, and revisit when your profile is stronger."
+        return "Do not spend time here yet unless your goals shift."
 
     def _behavior_signals(
         self,
@@ -283,6 +386,7 @@ class ScreenService:
     ) -> tuple[ProfileState, list[DocumentState], list[dict[str, Any]]]:
         profile = self._load_profile()
         documents = self._load_documents()
+        overrides = self._load_pipeline_overrides()
         evaluations = self.scoring.evaluate(
             profile,
             self.catalog.list_opportunities(),
@@ -290,8 +394,18 @@ class ScreenService:
         )
         saved_ids = set(profile.savedOpportunityIds)
         for item in evaluations:
+            override_stage = overrides.get(item["id"])
+            if override_stage in {"apply-now", "prepare-soon", "track-later", "skip"}:
+                item["pipelineStage"] = override_stage
+                item["recommendedAction"] = override_stage
+                item["nextStep"] = self._stage_next_step(override_stage)
             item["saved"] = item["id"] in saved_ids
-            item["recommendedAction"] = item["pipelineStage"]
+            item["recommendedAction"] = item.get("recommendedAction", item["pipelineStage"])
+            item["legacyAliases"] = [
+                alias
+                for alias, canonical in self._canonical_opportunity_aliases().items()
+                if canonical == item["id"]
+            ]
         if augment_with_glm:
             top_candidates = [item for item in evaluations if item["pipelineStage"] != "skip"][:4]
             enhancements = self.glm.explain_candidates(self._profile_summary(profile), top_candidates)
@@ -347,18 +461,18 @@ class ScreenService:
         document_lookup = {document.category.lower(): document for document in documents}
 
         module_templates = [
-            ("cv", "CV / Resume", "Showcase your skills and experience", "High", "Improve Now"),
-            ("transcript", "Transcript", "Academic performance and core coursework", "High", "View"),
-            ("portfolio", "Portfolio", "Projects that demonstrate your skills", "High", "Upload Project"),
-            ("linkedin", "LinkedIn", "Professional presence and networking", "Medium", "Improve Now"),
-            ("essay", "Essay / Personal Statement", "Your story, goals, and motivation", "High", "Improve Now"),
-            ("referee", "Referee", "Recommendations from mentors", "Medium", "Add Referee"),
-            ("certificates", "Certificates", "Certifications and achievements", "Medium", "Upload Certificate"),
-            ("profile", "Profile Completeness", "Personal details and preferences", "High", "Complete Now"),
+            ("cv", "CV / Resume", "Showcase your skills and experience", "High", "Improve Now", "/documents"),
+            ("transcript", "Transcript", "Academic performance and core coursework", "High", "View", "/documents"),
+            ("portfolio", "Portfolio", "Projects that demonstrate your skills", "High", "Upload Project", "/documents"),
+            ("linkedin", "LinkedIn", "Professional presence and networking", "Medium", "Improve Now", "/network"),
+            ("essay", "Essay / Personal Statement", "Your story, goals, and motivation", "High", "Improve Now", "/documents"),
+            ("referee", "Referee", "Recommendations from mentors", "Medium", "Add Referee", "/network"),
+            ("certificates", "Certificates", "Certifications and achievements", "Medium", "Upload Certificate", "/documents"),
+            ("profile", "Profile Completeness", "Personal details and preferences", "High", "Complete Now", "/profile"),
         ]
 
         modules: list[dict[str, Any]] = []
-        for module_id, title, description, impact, action in module_templates:
+        for module_id, title, description, impact, action, href in module_templates:
             if module_id == "profile":
                 filled_fields = [
                     bool(profile.course),
@@ -399,6 +513,7 @@ class ScreenService:
                     "completion": completion,
                     "impact": impact,
                     "action": action,
+                    "href": href,
                     "status": status,
                     "suggestions": suggestions,
                 }
@@ -590,7 +705,11 @@ class ScreenService:
         profile, documents, evaluations = self._evaluated_opportunities()
         overall, modules, _ = self._readiness_modules(profile, documents, evaluations)
         summary = self._build_pipeline_summary(evaluations)
-        tasks = [task.model_dump(mode="json") for task in self._load_planner()[:5]]
+        tasks = []
+        for task in self._load_planner()[:5]:
+            payload = task.model_dump(mode="json")
+            payload["done"] = payload["completed"]
+            tasks.append(payload)
         behavior_signals = self._behavior_signals(profile, evaluations)
         featured = self._build_featured_recommendation(
             profile,
@@ -644,8 +763,9 @@ class ScreenService:
     ) -> dict[str, Any]:
         profile, _, evaluations = self._evaluated_opportunities()
         items = evaluations
-        if category and category.lower() != "all":
-            items = [item for item in items if item["category"].lower() == category.lower()]
+        normalized_category = self._normalize_category_filter(category)
+        if normalized_category and normalized_category != "all":
+            items = [item for item in items if item["category"].lower() == normalized_category]
         if stage:
             items = [item for item in items if item["pipelineStage"] == stage]
         if search:
@@ -656,11 +776,12 @@ class ScreenService:
                 if token in item["title"].lower() or token in item["company"].lower()
             ]
 
-        if sort == "highest-roi":
+        normalized_sort = self._normalize_sort(sort)
+        if normalized_sort == "highest-roi":
             items.sort(key=lambda item: item["roiScore"], reverse=True)
-        elif sort == "most-urgent":
+        elif normalized_sort == "most-urgent":
             items.sort(key=lambda item: item["urgencyScore"], reverse=True)
-        elif sort == "low-effort":
+        elif normalized_sort == "low-effort":
             effort_order = {"Low": 0, "Medium": 1, "High": 2}
             items.sort(key=lambda item: (effort_order[item["effort"]], -item["fitScore"]))
         else:
@@ -698,12 +819,13 @@ class ScreenService:
                 ],
             },
             "whyRecommended": why_recommended,
-            "availableCategories": ["All", "Scholarship", "Internship", "Competition", "Grant", "Certification", "Programme"],
+            "availableCategories": ["All", "Scholarships", "Internships", "Competitions", "Grants", "Certifications", "Programmes"],
         }
 
     def get_opportunity_detail(self, opportunity_id: str) -> dict[str, Any] | None:
         profile, documents, evaluations = self._evaluated_opportunities()
-        evaluation = next((item for item in evaluations if item["id"] == opportunity_id), None)
+        resolved_id = self._resolve_opportunity_id(opportunity_id)
+        evaluation = next((item for item in evaluations if item["id"] == resolved_id), None)
         if evaluation is None:
             return None
         detail = self.glm.explain_opportunity_detail(self._profile_summary(profile), evaluation)
@@ -745,6 +867,7 @@ class ScreenService:
         }
         return {
             "id": evaluation["id"],
+            "requestedId": opportunity_id,
             "title": evaluation["title"],
             "company": evaluation["company"],
             "logo": evaluation["logo"],
@@ -799,6 +922,7 @@ class ScreenService:
         }
 
     def save_opportunity(self, opportunity_id: str, saved: bool | None) -> dict[str, Any]:
+        opportunity_id = self._resolve_opportunity_id(opportunity_id)
         profile = self._load_profile()
         saved_ids = set(profile.savedOpportunityIds)
         if saved is None:
@@ -829,6 +953,22 @@ class ScreenService:
             "atRisk": at_risk,
             "stages": grouped,
         }
+
+    def move_pipeline_stage(self, opportunity_id: str, stage: str) -> dict[str, Any] | None:
+        canonical_id = self._resolve_opportunity_id(opportunity_id)
+        if stage not in {"apply-now", "prepare-soon", "track-later", "skip"}:
+            return None
+        profile, _, evaluations = self._evaluated_opportunities()
+        evaluation = next((item for item in evaluations if item["id"] == canonical_id), None)
+        if evaluation is None:
+            return None
+        overrides = self._load_pipeline_overrides()
+        overrides[canonical_id] = stage
+        self._save_pipeline_overrides(overrides)
+        evaluation["pipelineStage"] = stage
+        evaluation["recommendedAction"] = stage
+        evaluation["nextStep"] = self._stage_next_step(stage)
+        return evaluation
 
     def get_readiness(self) -> dict[str, Any]:
         profile, documents, evaluations = self._evaluated_opportunities()
@@ -905,7 +1045,11 @@ class ScreenService:
 
     def get_planner(self) -> dict[str, Any]:
         profile, _, evaluations = self._evaluated_opportunities()
-        tasks = [task.model_dump(mode="json") for task in self._load_planner()]
+        tasks = []
+        for task in self._load_planner():
+            payload = task.model_dump(mode="json")
+            payload["done"] = payload["completed"]
+            tasks.append(payload)
         categories, focus_score, total_hours = self._planner_snapshot(tasks)
         ai = self.glm.planner_strategy(
             self._profile_summary(profile),
@@ -949,7 +1093,39 @@ class ScreenService:
         if changed is None:
             return None
         self._save_planner(updated_tasks)
-        return changed.model_dump(mode="json")
+        payload = changed.model_dump(mode="json")
+        payload["done"] = payload["completed"]
+        return payload
+
+    def create_planner_task(self, payload: dict[str, Any]) -> dict[str, Any]:
+        tasks = self._load_planner()
+        duration_minutes = payload.get("durationMinutes")
+        if duration_minutes is None:
+            duration_text = payload.get("duration", "30min").lower()
+            digits = "".join(character for character in duration_text if character.isdigit())
+            duration_minutes = int(digits or 30)
+            if "hr" in duration_text and duration_minutes <= 12:
+                duration_minutes *= 60
+        created = PlannerTaskState(
+            id=f"task-{uuid4().hex[:8]}",
+            title=payload["title"],
+            subtitle=payload.get("subtitle") or "",
+            dueLabel=payload.get("dueLabel") or "Today",
+            dueDate=payload.get("dueDate"),
+            time=payload.get("time"),
+            duration=payload.get("duration") or "30min",
+            durationMinutes=duration_minutes,
+            completed=False,
+            opportunityId=self._resolve_opportunity_id(payload["opportunityId"])
+            if payload.get("opportunityId")
+            else None,
+            type=payload.get("type") or "apply-now",
+        )
+        tasks.append(created)
+        self._save_planner(tasks)
+        result = created.model_dump(mode="json")
+        result["done"] = result["completed"]
+        return result
 
     def optimize_planner(self) -> dict[str, Any]:
         planner = self.get_planner()
@@ -1187,7 +1363,11 @@ class ScreenService:
         return response
 
     def get_applications(self) -> dict[str, Any]:
-        applications = [item.model_dump(mode="json") for item in self._load_applications()]
+        applications = []
+        for item in self._load_applications():
+            payload = item.model_dump(mode="json")
+            payload["detailOpportunityId"] = self._resolve_opportunity_id(item.opportunityId)
+            applications.append(payload)
         stats = {
             "totalApplications": len(applications),
             "inProgress": len([item for item in applications if item["status"] == "in-progress"]),
@@ -1197,6 +1377,7 @@ class ScreenService:
         return {"stats": stats, "items": applications}
 
     def create_application(self, opportunity_id: str) -> dict[str, Any] | None:
+        opportunity_id = self._resolve_opportunity_id(opportunity_id)
         opportunity = self.get_opportunity_detail(opportunity_id)
         if opportunity is None:
             return None
@@ -1374,17 +1555,60 @@ class ScreenService:
 
     def get_network(self) -> dict[str, Any]:
         payload = self._load_network()
-        connections = payload.get("connections", [])
+        connections = []
+        for item in payload.get("connections", []):
+            enriched = dict(item)
+            enriched.setdefault("messaging", False)
+            enriched.setdefault("message", "")
+            connections.append(enriched)
+        suggested_connections = []
+        for item in payload.get("suggestedConnections", []):
+            enriched = dict(item)
+            enriched.setdefault("connected", False)
+            suggested_connections.append(enriched)
         return {
             "stats": {
-                "totalConnections": len(connections),
+                "totalConnections": len(connections) + len([item for item in suggested_connections if item.get("connected")]),
                 "mentors": len([item for item in connections if item["type"] == "Mentor"]),
                 "alumni": len([item for item in connections if item["type"] == "Alumni"]),
-                "activeChats": max(0, len(connections) - 1),
+                "activeChats": len([item for item in connections if item.get("messaging")]),
             },
             "connections": connections,
-            "suggestedConnections": payload.get("suggestedConnections", []),
+            "suggestedConnections": suggested_connections,
         }
+
+    def connect_suggested_connection(self, connection_id: str) -> dict[str, Any] | None:
+        payload = self._load_network()
+        changed = None
+        updated = []
+        for item in payload.get("suggestedConnections", []):
+            current = dict(item)
+            if current.get("id") == connection_id:
+                current["connected"] = True
+                changed = current
+            updated.append(current)
+        if changed is None:
+            return None
+        payload["suggestedConnections"] = updated
+        self._save_network(payload)
+        return changed
+
+    def message_connection(self, connection_id: str, message: str) -> dict[str, Any] | None:
+        payload = self._load_network()
+        changed = None
+        updated = []
+        for item in payload.get("connections", []):
+            current = dict(item)
+            if current.get("id") == connection_id:
+                current["messaging"] = False
+                current["message"] = message
+                changed = current
+            updated.append(current)
+        if changed is None:
+            return None
+        payload["connections"] = updated
+        self._save_network(payload)
+        return changed
 
     def get_resources(self, search: str | None = None) -> dict[str, Any]:
         payload = self._load_resources()
@@ -1407,6 +1631,7 @@ class ScreenService:
         preferences = [item.model_dump(mode="json") for item in self._load_preferences()]
         return {
             "account": {
+                "fullName": profile.name,
                 "name": profile.name,
                 "email": profile.email,
                 "phone": profile.phone,
@@ -1417,12 +1642,29 @@ class ScreenService:
         }
 
     def update_account(self, payload: dict[str, Any]) -> dict[str, Any]:
+        if payload.get("fullName") and not payload.get("name"):
+            payload = {**payload, "name": payload["fullName"]}
         profile = self._load_profile()
         updated = profile.model_copy(update={key: value for key, value in payload.items() if value is not None})
         if updated.name and (not updated.firstName or payload.get("name")):
             updated = updated.model_copy(update={"firstName": updated.name.split()[0]})
         self._save_profile(updated)
         return self.get_settings()
+
+    def export_insights_report(self) -> dict[str, Any]:
+        insights = self.get_insights()
+        export_path = self.store.statePath("insights_report.json")
+        self.store.save_json(export_path, insights)
+        return {
+            "message": "Insights report generated successfully.",
+            "generatedAt": datetime.now().astimezone().isoformat(),
+            "exportPath": str(Path(export_path).resolve()),
+            "sections": {
+                "metrics": len(insights["metrics"]),
+                "categories": len(insights["categoriesByValue"]),
+                "aiInsights": len(insights["aiInsights"]),
+            },
+        }
 
     def update_preferences(self, payload: list[dict[str, Any]]) -> dict[str, Any]:
         current = {item.title: item for item in self._load_preferences()}
@@ -1452,7 +1694,7 @@ class ScreenService:
         self.store.save_json(export_path, export_payload)
         return {
             "message": "Export generated successfully.",
-            "generatedAt": datetime.utcnow().isoformat(),
+            "generatedAt": datetime.now().astimezone().isoformat(),
             "exportPath": str(Path(export_path).resolve()),
             "sections": {
                 "profile": True,
@@ -1460,4 +1702,16 @@ class ScreenService:
                 "documents": len(export_payload["documents"]),
                 "planner": len(export_payload["planner"]),
             },
+        }
+
+    def deactivate_account(self) -> dict[str, Any]:
+        return {
+            "success": True,
+            "message": "Account deactivation recorded in demo mode.",
+        }
+
+    def delete_account(self) -> dict[str, Any]:
+        return {
+            "success": True,
+            "message": "Account deletion request recorded in demo mode.",
         }

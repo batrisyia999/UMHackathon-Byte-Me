@@ -54,6 +54,7 @@ class HealthResponse(BaseModel):
 
 class ProfileUpdateRequest(BaseModel):
     name: str | None = None
+    fullName: str | None = None
     firstName: str | None = None
     avatar: str | None = None
     email: str | None = None
@@ -121,6 +122,7 @@ class UpdateDocumentRequest(BaseModel):
 
 class UpdateAccountRequest(BaseModel):
     name: str | None = None
+    fullName: str | None = None
     firstName: str | None = None
     email: str | None = None
     phone: str | None = None
@@ -135,6 +137,26 @@ class PreferenceUpdate(BaseModel):
 
 class UpdatePreferencesRequest(BaseModel):
     preferences: list[PreferenceUpdate]
+
+
+class PipelineStageUpdateRequest(BaseModel):
+    stage: Literal["apply-now", "prepare-soon", "track-later", "skip"]
+
+
+class CreatePlannerTaskRequest(BaseModel):
+    title: str
+    subtitle: str = ""
+    dueLabel: str = "Today"
+    dueDate: str | None = None
+    time: str | None = None
+    duration: str = "30min"
+    durationMinutes: int | None = None
+    type: Literal["apply-now", "prepare-soon", "track-later", "skip", "break"] = "apply-now"
+    opportunityId: str | None = None
+
+
+class ConnectionMessageRequest(BaseModel):
+    message: str
 
 
 class ExportResponse(BaseModel):

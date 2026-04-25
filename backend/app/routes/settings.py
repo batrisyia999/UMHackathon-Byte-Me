@@ -25,3 +25,13 @@ def update_preferences(payload: UpdatePreferencesRequest) -> dict:
 @router.post("/settings/export", response_model=ExportResponse)
 def export_data() -> ExportResponse:
     return ExportResponse.model_validate(get_container().screens.export_data())
+
+
+@router.post("/settings/deactivate")
+def deactivate_account() -> dict:
+    return get_container().screens.deactivate_account()
+
+
+@router.post("/settings/delete")
+def delete_account() -> dict:
+    return get_container().screens.delete_account()
