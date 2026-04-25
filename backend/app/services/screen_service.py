@@ -16,6 +16,7 @@ from app.models import (
     PreferenceState,
     ProfileState,
     ResourceState,
+    SettingsDetailState,
 )
 from app.services.catalog_service import CatalogService
 from app.services.glm_service import GLMService
@@ -88,6 +89,16 @@ class ScreenService:
 
     def _save_preferences(self, preferences: list[PreferenceState]) -> None:
         self.store.save_model(self.store.statePath("settings.json"), preferences)
+
+    def _load_settings_detail(self) -> SettingsDetailState:
+        return self.store.load_model(
+            self.store.statePath("settings_detail.json"),
+            SettingsDetailState,
+            default={},
+        )
+
+    def _save_settings_detail(self, detail: SettingsDetailState) -> None:
+        self.store.save_model(self.store.statePath("settings_detail.json"), detail)
 
     def _load_network(self) -> dict[str, Any]:
         return self.store.load_json(
@@ -1626,19 +1637,155 @@ class ScreenService:
             "categories": ["All Resources", "Guides", "Templates", "Videos", "Webinars"],
         }
 
+    def search(self, query: str | None = None) -> dict[str, Any]:
+        token = (query or "").strip().lower()
+        if not token:
+            return {
+                "query": "",
+                "totalCount": 0,
+                "results": [],
+            }
+
+        _, _, evaluations = self._evaluated_opportunities()
+        opportunity_results = []
+        for item in evaluations:
+            haystack = " ".join(
+                [
+                    item["title"],
+                    item["company"],
+                    item["category"],
+                    item.get("recommendation", ""),
+                ]
+            ).lower()
+            if token in haystack:
+                opportunity_results.append(
+                    {
+                        "id": item["id"],
+                        "type": "opportunity",
+                        "title": item["title"],
+                        "description": f"{item['company']}. {item.get('recommendation', '')}".strip(),
+                        "link": f"/opportunities/{item['id']}",
+                        "fitScore": item["fitScore"],
+                    }
+                )
+        opportunity_results = sorted(
+            opportunity_results,
+            key=lambda item: item.get("fitScore", 0),
+            reverse=True,
+        )[:6]
+
+        resource_payload = self._load_resources()
+        resource_results = []
+        for item in resource_payload.resources:
+            haystack = f"{item.title} {item.description}".lower()
+            if token in haystack:
+                resource_results.append(
+                    {
+                        "id": item.id,
+                        "type": "resource",
+                        "title": item.title,
+                        "description": item.description,
+                        "link": "/resource-hub",
+                    }
+                )
+
+        network_payload = self._load_network()
+        network_results = []
+        for group_name in ("connections", "suggestedConnections"):
+            for item in network_payload.get(group_name, []):
+                haystack = " ".join(
+                    [
+                        item.get("name", ""),
+                        item.get("role", ""),
+                        item.get("company", ""),
+                        " ".join(item.get("expertise", [])),
+                    ]
+                ).lower()
+                if token in haystack:
+                    mutual = item.get("mutual", 0)
+                    network_results.append(
+                        {
+                            "id": item["id"],
+                            "type": "network",
+                            "title": item["name"],
+                            "description": (
+                                f"{item.get('role', 'Connection')} at {item.get('company', 'Unknown company')}. "
+                                f"{mutual} mutual connections."
+                            ),
+                            "link": "/network",
+                        }
+                    )
+
+        results = opportunity_results + resource_results[:4] + network_results[:4]
+        return {
+            "query": query or "",
+            "totalCount": len(results),
+            "results": results,
+        }
+
+    def _subscription_payload(self) -> dict[str, Any]:
+        return {
+            "currentPlan": "Pro Scholar Plan",
+            "validUntil": "May 25, 2026",
+            "priceMonthly": 19.90,
+            "currency": "RM",
+            "billingLabel": "RM 19.90/mo",
+            "benefits": [
+                "Unlimited AI Advisor queries",
+                "Priority opportunity matching",
+                "Custom application templates",
+                "Document analysis & optimization",
+                "Early access to scholarship news",
+                "Advanced analytics dashboard",
+            ],
+            "recentTransactions": [
+                {"date": "Apr 25, 2026", "invoiceId": "#INV-2026-004", "amount": "RM 19.90", "status": "Paid"},
+                {"date": "Mar 25, 2026", "invoiceId": "#INV-2026-003", "amount": "RM 19.90", "status": "Paid"},
+                {"date": "Feb 25, 2026", "invoiceId": "#INV-2026-002", "amount": "RM 19.90", "status": "Paid"},
+            ],
+        }
+
+    def _support_payload(self) -> dict[str, Any]:
+        return {
+            "supportEmail": "support@byte-me.ai",
+            "helpCenterLabel": "Visit Help Center",
+            "communityLabel": "Join Discord",
+            "faq": [
+                "How do I cancel my subscription?",
+                "Can I export my application history?",
+                "How does the AI Advisor match me to opportunities?",
+                "Is my data safe with Byte Me?",
+            ],
+        }
+
     def get_settings(self) -> dict[str, Any]:
         profile = self._load_profile()
         preferences = [item.model_dump(mode="json") for item in self._load_preferences()]
+        detail = self._load_settings_detail().model_dump(mode="json")
         return {
             "account": {
                 "fullName": profile.name,
                 "name": profile.name,
+                "firstName": profile.firstName,
                 "email": profile.email,
                 "phone": profile.phone,
                 "university": profile.university,
                 "avatar": profile.avatar,
             },
             "preferences": preferences,
+            "notifications": preferences,
+            "aiPreferences": detail["aiPreferences"],
+            "region": detail["region"],
+            "privacy": detail["privacy"],
+            "security": detail["security"],
+            "subscription": self._subscription_payload(),
+            "support": self._support_payload(),
+            "dataControls": {
+                "exportAvailable": True,
+                "clearHistoryAvailable": True,
+                "deactivateAvailable": True,
+                "deleteAvailable": True,
+            },
         }
 
     def update_account(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -1680,6 +1827,24 @@ class ScreenService:
         self._save_preferences(updated)
         return self.get_settings()
 
+    def update_ai_preferences(self, payload: dict[str, Any]) -> dict[str, Any]:
+        detail = self._load_settings_detail()
+        updated = detail.aiPreferences.model_copy(update={key: value for key, value in payload.items() if value is not None})
+        self._save_settings_detail(detail.model_copy(update={"aiPreferences": updated}))
+        return self.get_settings()
+
+    def update_region_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
+        detail = self._load_settings_detail()
+        updated = detail.region.model_copy(update={key: value for key, value in payload.items() if value is not None})
+        self._save_settings_detail(detail.model_copy(update={"region": updated}))
+        return self.get_settings()
+
+    def update_privacy_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
+        detail = self._load_settings_detail()
+        updated = detail.privacy.model_copy(update={key: value for key, value in payload.items() if value is not None})
+        self._save_settings_detail(detail.model_copy(update={"privacy": updated}))
+        return self.get_settings()
+
     def export_data(self) -> dict[str, Any]:
         profile = self._load_profile().model_dump(mode="json")
         settings = self.get_settings()
@@ -1714,4 +1879,28 @@ class ScreenService:
         return {
             "success": True,
             "message": "Account deletion request recorded in demo mode.",
+        }
+
+    def clear_history(self) -> dict[str, Any]:
+        self._save_advisor_history([])
+        self.store.save_json(self.store.statePath("search_history.json"), [])
+        return {
+            "success": True,
+            "message": "Search and AI history cleared.",
+        }
+
+    def submit_feedback(self, message: str) -> dict[str, Any]:
+        feedback_path = self.store.statePath("feedback_log.json")
+        feedback = self.store.load_json(feedback_path, default=[])
+        feedback.append(
+            {
+                "id": str(uuid4()),
+                "message": message,
+                "submittedAt": datetime.now().astimezone().isoformat(),
+            }
+        )
+        self.store.save_json(feedback_path, feedback)
+        return {
+            "success": True,
+            "message": "Feedback submitted successfully.",
         }

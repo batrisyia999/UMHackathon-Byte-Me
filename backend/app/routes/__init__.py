@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.routes import advisor, applications, calendar, dashboard, documents, health
 from app.routes import insights, network, opportunities, pipeline, planner, profile
-from app.routes import readiness, resources, settings
+from app.routes import readiness, resources, search, settings
 
 router = APIRouter()
 router.include_router(health.router)
@@ -19,6 +19,7 @@ router.include_router(calendar.router)
 router.include_router(documents.router)
 router.include_router(network.router)
 router.include_router(resources.router)
+router.include_router(search.router)
 router.include_router(settings.router)
 
 __all__ = ["router"]

@@ -186,6 +186,68 @@ def test_network_supports_connect_and_message_actions(client):
     assert messaged.json()["message"] == "Hello mentor"
 
 
+def test_settings_endpoint_matches_latest_frontend_sections(client):
+    response = client.get("/api/settings")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["account"]["fullName"]
+    assert payload["notifications"] == payload["preferences"]
+    assert payload["aiPreferences"]["contextAwareness"]
+    assert payload["region"]["timezone"]
+    assert payload["privacy"]["profileVisibility"]
+    assert payload["security"]["passwordLastChangedLabel"]
+    assert payload["subscription"]["currentPlan"]
+    assert payload["subscription"]["recentTransactions"]
+    assert payload["support"]["supportEmail"]
+    assert payload["dataControls"]["clearHistoryAvailable"] is True
+
+
+def test_extended_settings_actions_and_search_endpoint_exist(client):
+    ai = client.put(
+        "/api/settings/ai-preferences",
+        json={"responseStyle": "Concise", "proactiveSuggestions": False},
+    )
+    assert ai.status_code == 200
+    assert ai.json()["aiPreferences"]["responseStyle"] == "Concise"
+    assert ai.json()["aiPreferences"]["proactiveSuggestions"] is False
+
+    region = client.put(
+        "/api/settings/region",
+        json={"timezone": "(GMT+00:00) London"},
+    )
+    assert region.status_code == 200
+    assert region.json()["region"]["timezone"] == "(GMT+00:00) London"
+
+    privacy = client.put(
+        "/api/settings/privacy",
+        json={"profileVisibility": "Private", "thirdPartySharing": True},
+    )
+    assert privacy.status_code == 200
+    assert privacy.json()["privacy"]["profileVisibility"] == "Private"
+    assert privacy.json()["privacy"]["thirdPartySharing"] is True
+
+    client.post(
+        "/api/advisor/chat",
+        json={"message": "What scholarships am I eligible for?", "history": []},
+    )
+    cleared = client.post("/api/settings/history/clear")
+    assert cleared.status_code == 200
+    assert cleared.json()["success"] is True
+    assert client.get("/api/advisor/bootstrap").json()["history"] == []
+
+    feedback = client.post("/api/settings/feedback", json={"message": "Great frontend compatibility update"})
+    assert feedback.status_code == 200
+    assert feedback.json()["success"] is True
+
+    search = client.get("/api/search?q=google")
+    assert search.status_code == 200
+    search_payload = search.json()
+    assert search_payload["query"] == "google"
+    assert search_payload["totalCount"] > 0
+    assert any(item["type"] == "opportunity" for item in search_payload["results"])
+    assert all(item["link"].startswith("/") for item in search_payload["results"])
+
+
 def test_insights_and_settings_export_actions_exist(client):
     insights_export = client.post("/api/insights/export")
     assert insights_export.status_code == 200

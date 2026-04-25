@@ -131,6 +131,38 @@ class PreferenceState(BaseModel):
     enabled: bool
 
 
+class AISettingsState(BaseModel):
+    proactiveSuggestions: bool = True
+    contextAwareness: str = "High"
+    responseStyle: str = "Detailed"
+    dataUsageForTraining: bool = False
+
+
+class RegionSettingsState(BaseModel):
+    language: str = "English (US)"
+    timezone: str = "(GMT+08:00) Kuala Lumpur, Singapore"
+    dateFormat: str = "DD/MM/YYYY"
+
+
+class PrivacySettingsState(BaseModel):
+    profileVisibility: str = "Public"
+    showUniversity: bool = True
+    analyticsEnabled: bool = True
+    thirdPartySharing: bool = False
+
+
+class SecuritySettingsState(BaseModel):
+    passwordLastChangedLabel: str = "Last changed 3 months ago"
+    twoFactorEnabled: bool = False
+
+
+class SettingsDetailState(BaseModel):
+    aiPreferences: AISettingsState = Field(default_factory=AISettingsState)
+    region: RegionSettingsState = Field(default_factory=RegionSettingsState)
+    privacy: PrivacySettingsState = Field(default_factory=PrivacySettingsState)
+    security: SecuritySettingsState = Field(default_factory=SecuritySettingsState)
+
+
 class ConnectionState(BaseModel):
     id: str
     name: str

@@ -139,6 +139,30 @@ class UpdatePreferencesRequest(BaseModel):
     preferences: list[PreferenceUpdate]
 
 
+class UpdateAISettingsRequest(BaseModel):
+    proactiveSuggestions: bool | None = None
+    contextAwareness: str | None = None
+    responseStyle: str | None = None
+    dataUsageForTraining: bool | None = None
+
+
+class UpdateRegionSettingsRequest(BaseModel):
+    language: str | None = None
+    timezone: str | None = None
+    dateFormat: str | None = None
+
+
+class UpdatePrivacySettingsRequest(BaseModel):
+    profileVisibility: str | None = None
+    showUniversity: bool | None = None
+    analyticsEnabled: bool | None = None
+    thirdPartySharing: bool | None = None
+
+
+class FeedbackRequest(BaseModel):
+    message: str
+
+
 class PipelineStageUpdateRequest(BaseModel):
     stage: Literal["apply-now", "prepare-soon", "track-later", "skip"]
 
