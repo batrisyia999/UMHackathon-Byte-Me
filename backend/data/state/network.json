@@ -1,0 +1,67 @@
+{
+  "connections": [
+    {
+      "id": "conn-001",
+      "name": "Dr. Sarah Ahmad",
+      "role": "Senior Data Scientist",
+      "company": "PETRONAS",
+      "type": "Mentor",
+      "date": "3 months ago",
+      "mutual": 5,
+      "expertise": ["Data Science", "Machine Learning", "Career Guidance"]
+    },
+    {
+      "id": "conn-002",
+      "name": "Ahmad Zaki",
+      "role": "Software Engineer",
+      "company": "Google Singapore",
+      "type": "Alumni",
+      "date": "6 months ago",
+      "mutual": 12,
+      "expertise": ["Software Engineering", "Interview Prep", "Internships"]
+    },
+    {
+      "id": "conn-003",
+      "name": "Nurul Huda",
+      "role": "ML Research Assistant",
+      "company": "University of Malaya",
+      "type": "Peer",
+      "date": "1 month ago",
+      "mutual": 8,
+      "expertise": ["Research", "AI/ML", "Scholarships"]
+    },
+    {
+      "id": "conn-004",
+      "name": "David Tan",
+      "role": "Graduate Programme Manager",
+      "company": "Shell Malaysia",
+      "type": "Mentor",
+      "date": "2 weeks ago",
+      "mutual": 3,
+      "expertise": ["Oil and Gas", "Graduate Programmes", "Career Development"]
+    }
+  ],
+  "suggestedConnections": [
+    {
+      "id": "suggested-001",
+      "name": "Prof. Lim Wei",
+      "role": "CS Faculty",
+      "company": "University of Malaya",
+      "mutual": 15
+    },
+    {
+      "id": "suggested-002",
+      "name": "Jennifer Lee",
+      "role": "HR Manager",
+      "company": "Maybank",
+      "mutual": 4
+    },
+    {
+      "id": "suggested-003",
+      "name": "Rajesh Kumar",
+      "role": "Data Analyst",
+      "company": "ADB",
+      "mutual": 9
+    }
+  ]
+}

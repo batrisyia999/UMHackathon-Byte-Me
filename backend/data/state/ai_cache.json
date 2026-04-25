@@ -1,0 +1,336 @@
+{
+  "1d2756c1ceea9aff0a6c59b56b74f11390345d9047efca48085757b44209d0cc": {
+    "mode": "dashboard_featured",
+    "profileHash": "aeeda97ffd4f24655eec7ed9da00fb0ce00c396f877e63781d75d9d25b2dfb9d",
+    "opportunityIds": [
+      "petronas-2026"
+    ],
+    "messageHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cachedAt": "2026-04-25T11:24:18.324390+00:00",
+    "response": {
+      "recommendedAction": "track-later",
+      "summary": "A highly lucrative and perfectly aligned internship at PETRONAS matching your ML and Data Science skills, but with a distant deadline and a missing resume requirement, making it ideal to track rather than apply to immediately.",
+      "reasoningBullets": [
+        "Exceptional fit score (92/100) directly aligns with your CS background, Python/ML skills, and primary goal for Industry Experience.",
+        "Outstanding compensation (RM 7,000/month) offers significant economic value and competitive industry exposure for an undergraduate.",
+        "Low urgency (50/100) due to the May 2026 deadline provides ample time to increase your readiness score before applying."
+      ],
+      "tradeoff": "While the role is a perfect skill and goal match with high pay, spending significant time on it right now distracts from immediate opportunities you are fully ready for, especially since your profile is currently incomplete for this application.",
+      "whyNotNow": "The deadline is far out (May 2026), and your readiness score is limited by a missing Resume/CV requirement, meaning an application today would be premature and potentially rejected due to missing documents.",
+      "nextStep": "Save this opportunity to your tracker and immediately upload your tailored Resume/CV to the platform to resolve the missing requirement and boost your readiness score.",
+      "economicImpact": "At RM 7,000/month, this internship provides substantial financial support and elite industry credibility, acting as a major economic accelerator for your early career.",
+      "confidenceScore": 85,
+      "confidenceReason": "The high fit score and clear alignment with your stated skills and goals provide strong confidence, though the exact role requirements and the discrepancy regarding your missing resume introduce slight uncertainty.",
+      "uncertainFields": [
+        "Specific technical or project requirements for the PETRONAS internship",
+        "Discrepancy between your listed 'CV / Resume' asset and the 'missing Resume / CV' requirement"
+      ],
+      "topPickRationale": "This opportunity represents the highest leverage for your career goals on the dashboard, combining top-tier compensation with an exact match for your ML and Data Science skill set, making it the most important long-term target to secure once your readiness is optimized."
+    }
+  },
+  "5400a438b3331f33d6ad25c606c7d2cfd01e48183d9d1f8bbb66256c78fcff4f": {
+    "mode": "opportunity_detail",
+    "profileHash": "aeeda97ffd4f24655eec7ed9da00fb0ce00c396f877e63781d75d9d25b2dfb9d",
+    "opportunityIds": [
+      "petronas-2026"
+    ],
+    "messageHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cachedAt": "2026-04-25T11:27:51.407982+00:00",
+    "response": {
+      "recommendedAction": "Track for Future Application",
+      "summary": "Highly relevant and lucrative PETRONAS internship perfectly matching Aisha's ML/Data Science profile, but the distant May 2026 deadline makes immediate action unnecessary.",
+      "reasoningBullets": [
+        "Exceptional skill alignment: Aisha's Python, ML, and Data Analysis skills directly match the AI and analytics focus of the role.",
+        "High economic value: RM 7,000/month is a premium internship stipend, significantly boosting her financial position.",
+        "Low urgency: The May 2026 deadline is distant, justifying the 'track-later' pipeline stage.",
+        "Potential time commitment conflict: The role likely requires full-time commitment, while Aisha currently indicates only 10-15 hrs/week availability."
+      ],
+      "tradeoff": "Delaying application prep saves current bandwidth for immediate priorities, but risks a rushed application later if not tracked properly.",
+      "whyNotNow": "The application deadline is over a year away (May 2026), making current preparation premature; effort is better allocated to nearer-term industry experience opportunities.",
+      "nextStep": "Set a calendar reminder for January 2026 to begin tailoring your resume and preparing for PETRONAS's rigorous interview process.",
+      "economicImpact": "At RM 7,000/month, even a short 3-month stint yields RM 21,000, providing substantial financial runway and elevating Aisha's post-grad salary negotiating power.",
+      "confidenceScore": 82,
+      "confidenceReason": "Strong skill and interest alignment, but uncertainty regarding whether the internship is part-time or full-time given Aisha's current 10-15 hr/week availability.",
+      "uncertainFields": [
+        "Time commitment required (Full-time vs. Part-time)",
+        "Specific project allocation within PETRONAS digital teams"
+      ],
+      "missingRequirements": [
+        "Tailored Resume / CV for PETRONAS application"
+      ],
+      "topPickRationale": "Unmatched alignment with Aisha's target industry (Data Science/ML) and offers top-tier compensation, making it a premier future target once the timeline aligns."
+    }
+  },
+  "30ae2f6c809f3fae3feea03097932e945f769348946f7b0632f7e6ff6d18ddd2": {
+    "mode": "candidate_shortlist",
+    "profileHash": "aeeda97ffd4f24655eec7ed9da00fb0ce00c396f877e63781d75d9d25b2dfb9d",
+    "opportunityIds": [
+      "airasia-data-2026",
+      "google-step-2026",
+      "petronas-2026",
+      "string"
+    ],
+    "messageHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cachedAt": "2026-04-25T11:28:47.048097+00:00",
+    "response": {
+      "results": [
+        {
+          "id": "petronas-2026",
+          "summary": "Highly aligned with your Machine Learning and Data Science interests at a top local employer with strong compensation.",
+          "tradeoff": "Excellent fit and high estimated value, but highly competitive; requires a polished, tailored CV to stand out.",
+          "whyNotNow": "Although you have a CV in your assets, it is flagged as missing for these roles, meaning your current version likely needs tailoring to highlight your Python and ML projects before applying.",
+          "nextStep": "Tailor your existing CV to emphasize your Machine Learning and Data Analysis projects, then shift this to 'apply-now'.",
+          "confidenceScore": 85,
+          "confidenceReason": "Strong skill alignment and high fit score, but there is a potential mismatch between your 10-15 hrs/week availability and a full-time internship requirement.",
+          "uncertainFields": [
+            "timeAvailability",
+            "resumeReadiness"
+          ],
+          "recommendedAction": "prepare-soon",
+          "readinessGap": "Tailoring your existing CV to highlight ML/Data Science projects specifically for this role, and clarifying your part-time availability constraints.",
+          "risk": "Your current 10-15 hrs/week availability might not meet the full-time demands of this internship, potentially making you ineligible.",
+          "fitLabel": "Excellent Fit",
+          "topPickRationale": "This is your top pick because it offers the best combination of high fit (92), strong compensation (RM 7,000/mo), and direct alignment with your primary goal of gaining industry experience in ML/Data Science."
+        },
+        {
+          "id": "google-step-2026",
+          "summary": "Prestigious internship with top-tier compensation, but likely misaligned with your current academic year.",
+          "tradeoff": "Extremely high brand value and pay, but STEP is typically designed for 1st/2nd-year students, making you potentially ineligible as a 3rd-year.",
+          "whyNotNow": "You are likely ineligible for the STEP program as a 3rd-year student; you should target standard Google SWE or APAC internships instead.",
+          "nextStep": "Verify the year-of-study eligibility criteria for STEP. If restricted to earlier years, pivot your search to standard Google Software Engineering internships.",
+          "confidenceScore": 40,
+          "confidenceReason": "The STEP program explicitly targets first and second-year undergraduates, which conflicts with your 3rd-year status.",
+          "uncertainFields": [
+            "yearEligibility"
+          ],
+          "recommendedAction": "skip",
+          "readinessGap": "Eligibility mismatch (Year 3 vs. STEP's Year 1-2 requirement); needs a pivot to standard SWE internship searches.",
+          "risk": "High chance of automatic rejection based on academic year criteria, wasting your preparation time.",
+          "fitLabel": "Poor Fit (Eligibility)",
+          "topPickRationale": "N/A - Not the top pick due to critical eligibility concerns regarding academic year requirements."
+        },
+        {
+          "id": "airasia-data-2026",
+          "summary": "Directly aligns with your Data Analysis and SQL skills, offering strong practical industry experience in analytics.",
+          "tradeoff": "Lower financial compensation compared to PETRONAS and Google, but highly relevant to your specific data analytics skill set and potentially less competitive.",
+          "whyNotNow": "You need to refine your CV to emphasize your SQL and Data Analysis projects specifically before submitting your application.",
+          "nextStep": "Tailor your CV for data analytics, highlighting your SQL and Python proficiency, then apply.",
+          "confidenceScore": 88,
+          "confidenceReason": "Skills match perfectly with the role requirements, but the 10-15 hrs/week availability constraint remains a potential blocker for a full-time internship.",
+          "uncertainFields": [
+            "timeAvailability"
+          ],
+          "recommendedAction": "prepare-soon",
+          "readinessGap": "Tailoring CV for a data analytics focus and confirming if part-time hours are acceptable.",
+          "risk": "Time commitment mismatch if the role requires standard full-time hours, which is typical for internships.",
+          "fitLabel": "Strong Fit",
+          "topPickRationale": "N/A - A very strong secondary option due to exact skill alignment, but lower overall value and fit score compared to the PETRONAS opportunity."
+        }
+      ]
+    }
+  },
+  "c61a4b1d55b5b2962e64d315e6dbad218b0b1fec538153479a2c26af22eaa342": {
+    "mode": "readiness_summary",
+    "profileHash": "aeeda97ffd4f24655eec7ed9da00fb0ce00c396f877e63781d75d9d25b2dfb9d",
+    "opportunityIds": [
+      "adb-japan-2026",
+      "google-step-2026",
+      "maybank-ytp-2026"
+    ],
+    "messageHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cachedAt": "2026-04-25T11:29:12.064539+00:00",
+    "response": {
+      "summary": "Aisha, you are highly competitive for top-tier programs like Maybank YTP (92% fit) and Google STEP (87% fit), but critical gaps in your Portfolio and Personal Statement are currently holding you back from submitting standout applications.",
+      "reasoningBullets": [
+        "Maybank YTP and Google STEP are your highest-fit opportunities, directly aligning with your goal for Industry Experience and skills in Data Science/Web Dev.",
+        "Your Portfolio (48%) and Essay (42%) are marked as critical and high-impact, yet remain under-prepared, creating a bottleneck for your applications.",
+        "You have applied to 6 opportunities but have 0 completed planner tasks, suggesting a lack of structured execution in the final preparation stages.",
+        "Although your CV module is 90% complete, it is flagged as a missing requirement for Google and Maybank, indicating it likely needs role-specific tailoring or formatting."
+      ],
+      "tradeoff": "By not prioritizing your Portfolio and Essay now, you risk submitting generic, incomplete applications to highly competitive programs, trading off the quality of your submissions for the breadth of applications.",
+      "whyNotNow": "Your applications for top-fit opportunities are blocked by incomplete high-impact assets\u2014specifically, the missing Personal Statement/Essay and an underdeveloped Portfolio, alongside unconfirmed Referees for scholarships.",
+      "nextStep": "Draft and finalize your Personal Statement/Essay, tailoring it to your top two targets (Maybank YTP and Google STEP), as this is a high-impact blocker across multiple applications.",
+      "economicImpact": "Securing a high-fit program like Maybank YTP or Google STEP translates to premium industry experience and significant financial compensation, accelerating your career trajectory and earning potential by 1-2 years compared to average placements.",
+      "confidenceScore": 85,
+      "confidenceReason": "Strong alignment between your profile, skills, and opportunity fit scores, but uncertainty exists around why the CV module is complete yet listed as a missing requirement for opportunities, suggesting a possible formatting or tailoring gap.",
+      "uncertainFields": [
+        "Specific CV formatting requirements for Google STEP and Maybank YTP",
+        "Exact deadline proximity for saved/applied opportunities"
+      ],
+      "tip": "Quality over quantity: With 10-15 hours a week, focus deeply on perfecting your Essay and Portfolio for your top 2 opportunities rather than spreading efforts thin across 6+ applications.",
+      "checklist": [
+        {
+          "label": "Finalize Personal Statement / Essay",
+          "impact": "High Impact"
+        },
+        {
+          "label": "Update and polish Portfolio projects",
+          "impact": "High Impact"
+        },
+        {
+          "label": "Tailor CV/Resume for Maybank YTP & Google STEP",
+          "impact": "High Impact"
+        },
+        {
+          "label": "Confirm Referees for ADB-Japan Scholarship",
+          "impact": "Medium Impact"
+        }
+      ],
+      "blockerNarrative": "You have the grades, skills, and drive, but your application engine is stalling. You've started applications for Google STEP and Maybank YTP, but your Personal Statement and Portfolio\u2014two of the most critical differentiators for CS students\u2014are only half-done. Without these, your application blends in with the rest. Additionally, your CV is technically done, but the system flags it as missing for these roles, meaning it likely needs specific tailoring or a required format. Fix the Essay and Portfolio first to unlock your highest-value targets."
+    }
+  },
+  "a568f99145834dbd329be2318479b563dc572c6e86e16d8d88847793507a7df6": {
+    "mode": "planner_strategy",
+    "profileHash": "aeeda97ffd4f24655eec7ed9da00fb0ce00c396f877e63781d75d9d25b2dfb9d",
+    "opportunityIds": [
+      "adb-japan-2026",
+      "airasia-data-2026",
+      "google-step-2026",
+      "petronas-2026"
+    ],
+    "messageHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cachedAt": "2026-04-25T11:29:36.094283+00:00",
+    "response": {
+      "summary": "The plan prioritizes immediate industry-relevant applications (Maybank, Google STEP) and technical readiness while deferring high-fit but later-deadline internships (PETRONAS, AirAsia) and off-goal scholarships (ADB) to fit Aisha's 10-15 hr/week capacity.",
+      "reasoningBullets": [
+        "'apply-now' tasks target immediate deadlines and high-impact industry roles directly aligned with her goal.",
+        "'prepare-soon' tasks build foundational readiness for competitive technical screens like Google STEP.",
+        "'track-later' and 'skip' tasks correctly defer low-urgency or off-target items to prevent overloading her limited weekly hours."
+      ],
+      "tradeoff": "Sacrificing early preparation for high-fit but distant opportunities (PETRONAS, AirAsia) to concentrate execution capacity on immediate, high-stakes applications and assessments.",
+      "whyNotNow": "PETRONAS and AirAsia have late May/June deadlines, making them less urgent than immediate applications, while the ADB scholarship does not align with her primary goal of industry experience.",
+      "nextStep": "Complete the Maybank YTP CV customization and submit the application to secure an immediate industry opportunity.",
+      "economicImpact": "Securing a top-tier tech internship significantly boosts early-career earning potential and industry positioning, justifying the heavy time investment in technical prep over lower-yield activities.",
+      "confidenceScore": 85,
+      "confidenceReason": "High alignment between her goal (Industry Experience) and prioritized tasks (internship apps/test prep), though the discrepancy between the PETRONAS task (apply-now) and opportunity (track-later) introduces slight execution uncertainty.",
+      "uncertainFields": [
+        "PETRONAS application urgency",
+        "Maybank YTP deadline",
+        "Referee response time"
+      ],
+      "rationale": [
+        "Prioritizes immediate industry experience over academic scholarships",
+        "Balances application execution with necessary technical preparation",
+        "Filters out low-yield distractions like low-priority hackathons"
+      ],
+      "optimization": {
+        "title": "Reallocate Hackathon Time to AirAsia Prep",
+        "text": "Skip the 30-minute 'Browse low-priority hackathons' and reallocate that time to outline the AirAsia Data Analyst application. AirAsia has a fit score of 92 and directly matches her Data Science interests; starting the draft now prevents a last-minute rush in June and leverages her current application momentum."
+      },
+      "focusTip": "Block out 2 uninterrupted hours for the Google STEP prep and coding challenge, as high performance on technical screens is your highest-leverage activity for securing elite industry experience."
+    }
+  },
+  "b172c7423bfb29332061a104b5ff71f62945f767a6312c72bc448e5eb45ee2e7": {
+    "mode": "insights_commentary",
+    "profileHash": "aeeda97ffd4f24655eec7ed9da00fb0ce00c396f877e63781d75d9d25b2dfb9d",
+    "opportunityIds": [
+      "goal-match",
+      "high-priority",
+      "time-saved",
+      "total-value",
+      "value-at-risk"
+    ],
+    "messageHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cachedAt": "2026-04-25T11:29:59.923942+00:00",
+    "response": {
+      "summary": "Aisha's pipeline exhibits a 'cash-over-experience' pattern, with 74% of its value (545k) concentrated in scholarships, which misaligns with her primary goal of securing industry experience.",
+      "reasoningBullets": [
+        "Scholarships dominate the pipeline at 545k (74%), but internships (85.5k) and programmes (76.5k) directly align with her goal of industry experience.",
+        "A significant bottleneck exists where 228.5k of value is at risk of expiring soon, yet her overall readiness is only 67%, threatening conversion.",
+        "With limited time (10-15 hrs/week), dedicating effort to high-cash scholarships dilutes focus from experience-building internships and programmes."
+      ],
+      "tradeoff": "Pursuing high-value scholarships trades off against securing practical industry experience, which is her stated primary objective.",
+      "whyNotNow": "Her readiness level is at 67%, meaning critical application materials or preparation for the 228.5k at-risk opportunities are likely incomplete or unoptimized.",
+      "nextStep": "Immediately prioritize readiness milestones for the 3 opportunities expiring within 30 days, specifically targeting the internship and programme applications.",
+      "economicImpact": "Reallocating 20% of scholarship application effort to internships could decrease total pipeline cash value by ~100k but significantly increase the probability of securing her primary goal of industry experience.",
+      "confidenceScore": 78,
+      "confidenceReason": "High data completeness and clear goal metrics, but uncertainty remains regarding the student's willingness to sacrifice nominal pipeline cash value for goal-aligned experience.",
+      "uncertainFields": [
+        "Scholarship vs. Internship preference weighting",
+        "Exact readiness gaps for at-risk opportunities"
+      ],
+      "cards": [
+        {
+          "label": "Pipeline Value",
+          "color": "text-green-600",
+          "text": "727k total, but 228.5k at risk"
+        },
+        {
+          "label": "Goal Alignment",
+          "color": "text-yellow-600",
+          "text": "Scholarships dominate, but internships match goal"
+        }
+      ],
+      "strategy": {
+        "currentFocus": "High-volume scholarship applications",
+        "suggestedFocus": "Targeted internship & programme applications",
+        "impactText": "Shifts pipeline from cash-heavy to experience-heavy, directly achieving the primary goal."
+      },
+      "economicImpactNarrative": "The current pipeline exhibits a 'cash-over-experience' equilibrium, where 74% of the economic value is tied to scholarships rather than internships. The critical bottleneck is the 228.5k value at risk combined with a 67% readiness score, threatening conversion. The strategic shift requires pivoting application effort from low-probability/high-cash scholarships to high-probability/experience-focused internships, sacrificing nominal pipeline value to maximize the ROI on her actual goal."
+    }
+  },
+  "40bdcbfaa588e4bafe9ae261a0a0de1fbd0df86c7c73476571e771e80b777b79": {
+    "mode": "advisor_reply",
+    "profileHash": "aeeda97ffd4f24655eec7ed9da00fb0ce00c396f877e63781d75d9d25b2dfb9d",
+    "opportunityIds": [
+      "adb-japan-2026",
+      "airasia-data-2026",
+      "cv",
+      "google-step-2026",
+      "linkedin",
+      "maybank-ytp-2026",
+      "ocbc-public-scholarship-2026",
+      "petronas-2026",
+      "portfolio",
+      "shell-grad-2027",
+      "task-1",
+      "task-2",
+      "task-3",
+      "task-4",
+      "transcript",
+      "ytl-scholarship-2026"
+    ],
+    "messageHash": "18d0cf55eafd3d250200feebe3a936dd62c967a0cd3a7a948d141e2ea985536f",
+    "cachedAt": "2026-04-25T16:57:10.903697+00:00",
+    "response": {
+      "response": "Hi Aisha! Based on your profile, you're matched to 3 scholarships right now. Here's how they stack up:\n\n1. **ADB-Japan Scholarship Program 2026** \u2014 Best fit (81%) and highest ROI (83). Covers full tuition + living allowance, which is the most valuable package. Deadline: 15 May (19 days away). \u26a0\ufe0f Missing: Referee recommendation \u2014 you have a task scheduled for 22 May to request this, but the deadline is 15 May, so you need to act sooner.\n\n2. **OCBC Public Scholarship Programme 2026** \u2014 Solid fit (79%), RM 15,000 support, and no missing requirements \u2014 you're ready to apply now. Deadline: 30 Jun (65 days), giving you plenty of time.\n\n3. **YTL Foundation Scholarship Programme 2026** \u2014 Lower fit (72%) but marked \"prepare-soon\" because the deadline is 30 Apr (only 4 days away). Missing: a tailored CV. Given the tight timeline and lower fit, this is a stretch unless you can move fast.\n\n**My recommendation**: Prioritize OCBC first (no blockers, apply-ready), then urgently secure your referee letter for ADB-Japan (highest value). YTL is likely not feasible given the 4-day window.",
+      "summary": "3 scholarships matched: ADB-Japan (highest value, needs referee), OCBC (apply-ready, no blockers), YTL (4-day deadline, lower fit \u2014 likely a stretch).",
+      "reasoningBullets": [
+        "ADB-Japan has the highest fit (81) and ROI (83) with the most valuable award (full tuition + living allowance), but requires a referee letter before the 15 May deadline.",
+        "OCBC is your only blocker-free scholarship \u2014 you can start applying immediately with a 30 Jun deadline.",
+        "YTL's 4-day deadline makes it impractical unless you can produce a tailored CV today; its lower fit score (72) suggests weaker alignment with your CS/Data Science profile.",
+        "Your readiness score is 67% \u2014 portfolio is critical at 48%, which may weaken scholarship applications that assess project evidence.",
+        "You've already saved ADB-Japan and have a planner task for the referee, but the task date (22 May) is after the deadline (15 May)."
+      ],
+      "tradeoff": "ADB-Japan offers the largest financial impact but carries deadline risk (referee needed in <19 days). OCBC is lower value (RM 15,000 vs. full tuition) but is immediately actionable with zero blockers. Going for YTL would consume urgent effort for a lower-fit opportunity.",
+      "whyNotNow": "For ADB-Japan: your referee request task is scheduled for 22 May, which is after the 15 May deadline \u2014 this needs to be moved up immediately. For YTL: 4 days is very tight to customize your CV and submit a competitive application.",
+      "nextStep": "1) Start your OCBC application today \u2014 no blockers. 2) Move your referee request task to this week (before 28 Apr) to meet ADB-Japan's 15 May deadline. 3) Skip YTL unless you can submit a polished CV by 29 Apr.",
+      "economicImpact": "ADB-Japan: Full tuition + living allowance (potentially RM 50,000+ annually). OCBC: RM 15,000 one-time support. Combined potential: RM 65,000+ if you pursue both strategically.",
+      "confidenceScore": 78,
+      "confidenceReason": "Scholarship eligibility is well-matched by the scoring system, but the referee timeline conflict for ADB-Japan and the CV discrepancy for YTL introduce uncertainty about whether missing requirements can be resolved in time.",
+      "uncertainFields": [
+        "Referee availability timeline for ADB-Japan",
+        "Whether YTL's CV requirement means a new tailored CV vs. your existing one",
+        "Exact monetary value of YTL scholarship"
+      ],
+      "citedOpportunityIds": [
+        "adb-japan-2026",
+        "ocbc-public-scholarship-2026",
+        "ytl-scholarship-2026"
+      ],
+      "recommendedActions": [
+        "Start OCBC Public Scholarship application immediately \u2014 zero missing requirements",
+        "Reschedule referee request to this week (before 28 Apr) to meet ADB-Japan's 15 May deadline",
+        "Add 2 quantified achievements to your CV to strengthen all scholarship applications",
+        "Upload 2 outcomes-focused projects to your portfolio (currently at 48% \u2014 critical for scholarship competitiveness)",
+        "Consider deprioritizing YTL given the 4-day window and lower fit score"
+      ],
+      "suggestedPrompts": [
+        "Help me draft a referee request email for ADB-Japan",
+        "What should I highlight in my OCBC scholarship application?",
+        "How can I improve my portfolio for scholarship applications?",
+        "Is YTL worth pursuing with only 4 days left?"
+      ]
+    }
+  }
+}

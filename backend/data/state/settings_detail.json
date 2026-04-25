@@ -1,0 +1,23 @@
+{
+  "aiPreferences": {
+    "proactiveSuggestions": true,
+    "contextAwareness": "High",
+    "responseStyle": "Detailed",
+    "dataUsageForTraining": false
+  },
+  "region": {
+    "language": "English (US)",
+    "timezone": "(GMT+08:00) Kuala Lumpur, Singapore",
+    "dateFormat": "DD/MM/YYYY"
+  },
+  "privacy": {
+    "profileVisibility": "Public",
+    "showUniversity": true,
+    "analyticsEnabled": true,
+    "thirdPartySharing": false
+  },
+  "security": {
+    "passwordLastChangedLabel": "Last changed 3 months ago",
+    "twoFactorEnabled": false
+  }
+}

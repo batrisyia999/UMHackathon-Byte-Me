@@ -1,0 +1,78 @@
+{
+  "resources": [
+    {
+      "id": "resource-001",
+      "title": "Complete CV Writing Guide",
+      "type": "guide",
+      "description": "Learn how to write a compelling CV for internships and scholarships.",
+      "duration": "15 min read",
+      "rating": 4.8,
+      "downloads": 1234
+    },
+    {
+      "id": "resource-002",
+      "title": "Scholarship Application Masterclass",
+      "type": "video",
+      "description": "Step-by-step guide to scholarship applications and positioning.",
+      "duration": "45 min",
+      "rating": 4.9,
+      "downloads": 892
+    },
+    {
+      "id": "resource-003",
+      "title": "Interview Preparation Checklist",
+      "type": "template",
+      "description": "A practical checklist for technical, behavioural, and panel interviews.",
+      "duration": "5 min read",
+      "rating": 4.7,
+      "downloads": 567
+    },
+    {
+      "id": "resource-004",
+      "title": "How to Build a Data Science Portfolio",
+      "type": "guide",
+      "description": "What to include in a portfolio to stand out for analytics and AI roles.",
+      "duration": "20 min read",
+      "rating": 4.6,
+      "downloads": 423
+    },
+    {
+      "id": "resource-005",
+      "title": "Personal Statement Template",
+      "type": "template",
+      "description": "A strong structure for scholarship and programme essays.",
+      "duration": "10 min read",
+      "rating": 4.9,
+      "downloads": 789
+    },
+    {
+      "id": "resource-006",
+      "title": "Resume Templates (ATS-Friendly)",
+      "type": "template",
+      "description": "Five professional resume templates built for recruiter readability.",
+      "duration": "5 min read",
+      "rating": 4.9,
+      "downloads": 2341
+    }
+  ],
+  "webinars": [
+    {
+      "id": "webinar-001",
+      "title": "Mastering Technical Interviews",
+      "date": "25 May 2026",
+      "time": "2:00 PM"
+    },
+    {
+      "id": "webinar-002",
+      "title": "Scholarship Application Tips",
+      "date": "28 May 2026",
+      "time": "3:00 PM"
+    },
+    {
+      "id": "webinar-003",
+      "title": "Building Your Personal Brand",
+      "date": "02 Jun 2026",
+      "time": "4:00 PM"
+    }
+  ]
+}

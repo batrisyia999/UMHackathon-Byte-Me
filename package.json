@@ -1,0 +1,18 @@
+{
+  "scripts": {
+    "frontend:dev": "npm --prefix react-router-app run dev",
+    "frontend:build": "npm --prefix react-router-app run build",
+    "frontend:typecheck": "npm --prefix react-router-app run typecheck",
+    "backend:install": "python -m pip install -r backend/requirements.txt",
+    "backend:dev": "python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000",
+    "backend:test": "python -m pytest backend"
+  },
+  "dependencies": {
+    "lucide-react": "^1.9.0",
+    "react-router": "^7.14.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
+  }
+}
