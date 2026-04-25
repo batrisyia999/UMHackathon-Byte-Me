@@ -31,3 +31,5 @@ If the backend runs on a different port, set these before starting the frontend:
 - Frontend typecheck: `npm run frontend:typecheck`
 - Frontend production build: `npm run frontend:build`
 - Backend tests: `npm run backend:test`
+## Pitching Video
+https://drive.google.com/file/d/1JJrFJ2WpLVRy4WuMkhLJm1uDPaGf7oVi/view?usp=drivesdk
