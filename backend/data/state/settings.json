@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Email Notifications",
+    "description": "Receive email updates about new opportunities",
+    "enabled": true
+  },
+  {
+    "title": "Push Notifications",
+    "description": "Get push notifications for important updates",
+    "enabled": true
+  },
+  {
+    "title": "Weekly Digest",
+    "description": "Receive a weekly summary of your opportunities",
+    "enabled": true
+  },
+  {
+    "title": "AI Recommendations",
+    "description": "Get AI-powered opportunity recommendations",
+    "enabled": true
+  },
+  {
+    "title": "Marketing Emails",
+    "description": "Receive updates about new features and tips",
+    "enabled": false
+  }
+]

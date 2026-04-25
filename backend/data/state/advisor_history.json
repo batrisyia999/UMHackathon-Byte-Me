@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "role": "user",
+    "content": "Which opportunities should I prioritize this week?",
+    "time": "9:12 AM"
+  },
+  {
+    "id": 2,
+    "role": "assistant",
+    "content": "Based on your profile, goals, and upcoming deadlines, focus first on the highest-fit internships and the scholarship that is both valuable and time-sensitive.",
+    "time": "9:12 AM"
+  },
+  {
+    "id": 3,
+    "role": "user",
+    "content": "Which has the best ROI?",
+    "time": "9:14 AM"
+  },
+  {
+    "id": 4,
+    "role": "assistant",
+    "content": "The strongest ROI usually comes from a combination of stipend or funding value, signalling value, and realistic effort for your current readiness level.",
+    "time": "9:14 AM"
+  },
+  {
+    "id": 5,
+    "role": "user",
+    "content": "What am I missing for the top scholarship?",
+    "time": "9:15 AM"
+  },
+  {
+    "id": 6,
+    "role": "assistant",
+    "content": "Your main gaps are essay readiness, referee preparation, and making sure your portfolio and academic materials are current and easy to submit.",
+    "time": "9:15 AM"
+  },
+  {
+    "id": 7,
+    "role": "user",
+    "content": "Which opportunities should I prioritize this week?",
+    "time": "12:54 AM"
+  },
+  {
+    "id": 8,
+    "role": "assistant",
+    "content": "Prioritize these opportunities this week:\n1. ADB-Japan Scholarship Program 2026 (prepare-soon, 81% fit, ROI 83/100, deadline is in 20 days, Full Tuition + Living Allowance)\n2. YTL Foundation Scholarship Programme 2026 (prepare-soon, 72% fit, ROI 76/100, deadline is in 5 days, High-Value Scholarship)\n3. Google STEP Internship (GAPAC) 2026 (prepare-soon, 87% fit, ROI 83/100, deadline is in 29 days, RM 9,500 / month)\nStart with: Close the missing readiness gaps first, then begin the application.",
+    "time": "12:54 AM"
+  }
+]
