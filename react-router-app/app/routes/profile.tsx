@@ -1,377 +1,448 @@
-import { useState } from 'react';
-import { Sparkles, CheckCircle2, Plus } from 'lucide-react';
-import { MOCK_USER } from '../lib/mockData';
+import { useEffect, useMemo, useState } from "react";
+import { Sparkles, Plus, X } from "lucide-react";
+import { Link, useLoaderData } from "react-router";
 
-export function loader() {
-    return {};
+import { apiGet, apiPut } from "../lib/api";
+import type { ProfileResponse } from "../types/api";
+
+export async function loader() {
+  return apiGet<ProfileResponse>("/api/profile");
 }
 
 export default function Profile() {
-    const user = MOCK_USER;
-    const [saved, setSaved] = useState(false);
-    const [timeAvailability, setTimeAvailability] = useState<string>(user.timeAvailability);
-    const [readinessLevel, setReadinessLevel] = useState<string>(user.readinessLevel);
-    const [interests, setInterests] = useState(user.interests);
-    const [newInterest, setNewInterest] = useState('');
-    const [showAddInterest, setShowAddInterest] = useState(false);
+  const data = useLoaderData() as ProfileResponse;
+  const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [newInterest, setNewInterest] = useState("");
+  const [showAddInterest, setShowAddInterest] = useState(false);
+  const [form, setForm] = useState({
+    name: data.profile.name,
+    email: data.profile.email,
+    phone: data.profile.phone,
+    university: data.profile.university,
+    course: data.profile.course,
+    faculty: data.profile.faculty,
+    year: String(data.profile.year),
+    cgpaMin: String(data.profile.cgpaMin),
+    cgpaMax: String(data.profile.cgpaMax),
+    goal: data.profile.goal,
+    timeAvailability: data.profile.timeAvailability,
+    readinessLevel: data.profile.readinessLevel,
+    interests: data.profile.interests,
+  });
 
-    const handleSaveDraft = () => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-    };
+  useEffect(() => {
+    setForm({
+      name: data.profile.name,
+      email: data.profile.email,
+      phone: data.profile.phone,
+      university: data.profile.university,
+      course: data.profile.course,
+      faculty: data.profile.faculty,
+      year: String(data.profile.year),
+      cgpaMin: String(data.profile.cgpaMin),
+      cgpaMax: String(data.profile.cgpaMax),
+      goal: data.profile.goal,
+      timeAvailability: data.profile.timeAvailability,
+      readinessLevel: data.profile.readinessLevel,
+      interests: data.profile.interests,
+    });
+  }, [data.profile]);
 
-    const handleAddInterest = () => {
-        if (newInterest.trim() && !interests.includes(newInterest.trim())) {
-            setInterests(prev => [...prev, newInterest.trim()]);
-        }
-        setNewInterest('');
-        setShowAddInterest(false);
-    };
+  const completenessCards = useMemo(
+    () => [
+      { label: "Completeness", value: data.profileStrength.completeness },
+      { label: "Assets", value: data.profileStrength.assets },
+      { label: "Relevance", value: data.profileStrength.relevance },
+      { label: "Engagement", value: data.profileStrength.engagement },
+    ],
+    [data.profileStrength],
+  );
 
-    const removeInterest = (interest: string) => {
-        setInterests(prev => prev.filter(i => i !== interest));
-    };
+  async function saveProfile() {
+    setIsSaving(true);
 
-    return (
-        <div className="p-6 max-w-[1400px] mx-auto">
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold mb-2">
-                    Student Profile & Onboarding 👋
-                </h1>
-                <p className="text-gray-600">
-                    Tell us about yourself so we can personalize your opportunities and
-                    recommendations.
-                </p>
+    try {
+      await apiPut("/api/profile", {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        university: form.university,
+        course: form.course,
+        faculty: form.faculty,
+        year: Number(form.year),
+        cgpaMin: Number(form.cgpaMin),
+        cgpaMax: Number(form.cgpaMax),
+        goal: form.goal,
+        timeAvailability: form.timeAvailability,
+        readinessLevel: form.readinessLevel,
+        interests: form.interests,
+      });
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function addInterest() {
+    const nextInterest = newInterest.trim();
+
+    if (!nextInterest || form.interests.includes(nextInterest)) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      interests: [...current.interests, nextInterest],
+    }));
+    setNewInterest("");
+    setShowAddInterest(false);
+  }
+
+  return (
+    <div className="mx-auto max-w-[1400px] p-6">
+      <div className="mb-6">
+        <h1 className="mb-2 text-2xl font-semibold">Student Profile</h1>
+        <p className="text-gray-600">
+          Update your background so recommendations stay relevant and actionable.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-6">
+        <div className="col-span-2 space-y-6">
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <img
+                  src={data.profile.avatar}
+                  alt={data.profile.name}
+                  className="h-14 w-14 rounded-full border border-gray-200 bg-indigo-50"
+                />
+                <div>
+                  <div className="font-semibold">{data.profile.name}</div>
+                  <div className="text-sm text-gray-600">
+                    {data.profile.course} • {data.profile.university}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => void saveProfile()}
+                disabled={isSaving}
+                className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
+                  saved
+                    ? "border-green-300 bg-green-50 text-green-600"
+                    : "border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                {isSaving ? "Saving..." : saved ? "Saved" : "Save Changes"}
+              </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
-                {/* Main Form */}
-                <div className="col-span-2 space-y-6">
-                    <div className="bg-white rounded-xl border border-gray-200 p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xl">
-                                    1
-                                </div>
-                                <div>
-                                    <div className="font-semibold">Profile</div>
-                                    <div className="text-sm text-gray-600">Tell us all about you</div>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleSaveDraft}
-                                className={`px-4 py-2 text-sm border rounded-lg transition-colors ${saved ? 'border-green-300 bg-green-50 text-green-600' : 'border-gray-200 hover:bg-gray-50'}`}
-                            >
-                                {saved ? '✓ Draft Saved' : 'Save Draft'}
-                            </button>
-                        </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Field
+                label="Full Name"
+                value={form.name}
+                onChange={(value) => setForm((current) => ({ ...current, name: value }))}
+              />
+              <Field
+                label="Email"
+                value={form.email}
+                onChange={(value) => setForm((current) => ({ ...current, email: value }))}
+              />
+              <Field
+                label="Phone"
+                value={form.phone}
+                onChange={(value) => setForm((current) => ({ ...current, phone: value }))}
+              />
+              <Field
+                label="University"
+                value={form.university}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, university: value }))
+                }
+              />
+              <Field
+                label="Course"
+                value={form.course}
+                onChange={(value) => setForm((current) => ({ ...current, course: value }))}
+              />
+              <Field
+                label="Faculty"
+                value={form.faculty}
+                onChange={(value) => setForm((current) => ({ ...current, faculty: value }))}
+              />
+              <Field
+                label="Year"
+                value={form.year}
+                onChange={(value) => setForm((current) => ({ ...current, year: value }))}
+              />
+              <Field
+                label="Goal"
+                value={form.goal}
+                onChange={(value) => setForm((current) => ({ ...current, goal: value }))}
+              />
+            </div>
 
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-2">
-                                        Course / Faculty
-                                    </label>
-                                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                        <option>{user.course}</option>
-                                        <option>Computer Engineering</option>
-                                        <option>Information Systems</option>
-                                    </select>
-                                    <div className="text-xs text-gray-600 mt-1">{user.faculty}</div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-2">
-                                        Current Year
-                                    </label>
-                                    <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                        <option>Year {user.year}</option>
-                                        <option>Year 1</option>
-                                        <option>Year 2</option>
-                                        <option>Year 4</option>
-                                    </select>
-                                    <div className="text-xs text-gray-600 mt-1">{user.studyLevel}</div>
-                                </div>
-                            </div>
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <Field
+                label="CGPA Min"
+                value={form.cgpaMin}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, cgpaMin: value }))
+                }
+              />
+              <Field
+                label="CGPA Max"
+                value={form.cgpaMax}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, cgpaMax: value }))
+                }
+              />
+            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium mb-2">CGPA Range</label>
-                                <div className="flex gap-4">
-                                    <input
-                                        type="text"
-                                        defaultValue={user.cgpaMin}
-                                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    />
-                                    <span className="self-center">-</span>
-                                    <input
-                                        type="text"
-                                        defaultValue={user.cgpaMax}
-                                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Areas of Interest
-                                </label>
-                                <div className="flex flex-wrap gap-2">
-                                    {interests.map((interest) => (
-                                        <span
-                                            key={interest}
-                                            className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full text-sm flex items-center gap-1 group"
-                                        >
-                                            {interest}
-                                            <button
-                                                onClick={() => removeInterest(interest)}
-                                                className="opacity-0 group-hover:opacity-100 ml-1 text-indigo-400 hover:text-indigo-700 text-xs leading-none"
-                                            >
-                                                ×
-                                            </button>
-                                        </span>
-                                    ))}
-                                    {showAddInterest ? (
-                                        <div className="flex items-center gap-1">
-                                            <input
-                                                autoFocus
-                                                type="text"
-                                                value={newInterest}
-                                                onChange={e => setNewInterest(e.target.value)}
-                                                onKeyDown={e => { if (e.key === 'Enter') handleAddInterest(); if (e.key === 'Escape') setShowAddInterest(false); }}
-                                                placeholder="Type interest..."
-                                                className="border border-gray-300 rounded-full px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-36"
-                                            />
-                                            <button onClick={handleAddInterest} className="text-xs bg-indigo-600 text-white px-2 py-1 rounded-full hover:bg-indigo-700">Add</button>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => setShowAddInterest(true)}
-                                            className="border border-gray-200 px-3 py-1.5 rounded-full text-sm hover:bg-gray-50 flex items-center gap-1"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" /> Add
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Primary Goal (Select up to 2)
-                                </label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {['Internship', 'Full-time Job', 'Scholarship', 'Research'].map(goal => (
-                                        <label key={goal} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer ${goal === 'Internship' ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                            <input type="checkbox" className="w-4 h-4 accent-indigo-600" defaultChecked={goal === 'Internship'} />
-                                            <span className="text-sm">{goal}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Time Availability (per week)
-                                </label>
-                                <div className="flex gap-3 flex-wrap">
-                                    {['< 5 hrs', '5 - 10 hrs', '10 - 15 hrs', '15+ hrs'].map((option) => (
-                                        <button
-                                            key={option}
-                                            onClick={() => setTimeAvailability(option)}
-                                            className={`px-4 py-2 rounded-lg text-sm transition-colors ${option === timeAvailability
-                                                ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 font-medium'
-                                                : 'border border-gray-200 hover:bg-gray-50'
-                                                }`}
-                                        >
-                                            {option}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Readiness Level
-                                </label>
-                                <div className="flex gap-3 flex-wrap">
-                                    {['Just Exploring', 'Actively Preparing', 'Ready to Apply'].map((option) => (
-                                        <button
-                                            key={option}
-                                            onClick={() => setReadinessLevel(option)}
-                                            className={`px-4 py-2 rounded-lg text-sm transition-colors ${option === readinessLevel
-                                                ? 'bg-indigo-50 border border-indigo-200 text-indigo-600 font-medium'
-                                                : 'border border-gray-200 hover:bg-gray-50'
-                                                }`}
-                                        >
-                                            {option}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Assets Section */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 text-xl">
-                                2
-                            </div>
-                            <div>
-                                <div className="font-semibold">Assets</div>
-                                <div className="text-sm text-gray-600">Upload & connect</div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <AssetCard title="CV / Resume" status="Uploaded" filename="Aisha_Rahman_CV.pdf" />
-                            <AssetCard title="Transcript" status="Uploaded" filename="UM_Transcript.pdf" />
-                            <AssetCard title="Portfolio" status="Added" link="View Portfolio" />
-                            <AssetCard title="LinkedIn" status="Connected" link="linkedin.com/in/aisharahman" />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Sidebar */}
-                <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-5">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Sparkles className="w-5 h-5 text-indigo-600" />
-                            <h3 className="font-semibold">AI Profile Summary</h3>
-                            <span className="ml-auto text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">
-                                Beta
-                            </span>
-                        </div>
-                        <div className="bg-white rounded-lg p-4 mb-4">
-                            <div className="text-sm font-medium text-gray-900 mb-2">Match Quality</div>
-                            <div className="text-3xl font-semibold text-green-600 mb-2">Good</div>
-                            <div className="bg-green-50 rounded p-2">
-                                <div className="text-xs text-green-700">72%</div>
-                                <div className="text-xs text-gray-600 mt-1">
-                                    Complete a few more steps to reach Excellent match quality.
-                                </div>
-                            </div>
-                        </div>
-                        <div className="text-sm font-medium text-gray-900 mb-2">
-                            You're best suited for
-                        </div>
-                        <div className="space-y-2">
-                            {[
-                                { label: 'Data Science Internships', match: 'High Match', color: 'text-green-600' },
-                                { label: 'AI/ML Research Assistantships', match: 'High Match', color: 'text-green-600' },
-                                { label: 'Software Engineering Internships', match: 'Medium Match', color: 'text-orange-600' },
-                            ].map((item) => (
-                                <div key={item.label} className="bg-white rounded-lg p-3">
-                                    <div className="text-sm">{item.label}</div>
-                                    <div className={`text-xs ${item.color}`}>{item.match}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl border border-gray-200 p-5">
-                        <h3 className="font-semibold mb-4">Improve your match quality</h3>
-                        <div className="space-y-3">
-                            {[
-                                { tip: 'Add a portfolio link', sub: 'Profiles with portfolios get 2.5x more matches' },
-                                { tip: 'Add more skills', sub: 'Adding skills improves matching' },
-                                { tip: 'Upload certifications', sub: 'Show your achievements' },
-                                { tip: 'Complete your interests', sub: 'Add more interests for better recommendations' },
-                            ].map((item) => (
-                                <div key={item.tip} className="flex items-start gap-2">
-                                    <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                                    <div>
-                                        <div className="text-sm">{item.tip}</div>
-                                        <div className="text-xs text-gray-600">{item.sub}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl border border-gray-200 p-5">
-                        <h3 className="font-semibold mb-3">Profile Strength</h3>
-                        <div className="space-y-3">
-                            {[
-                                { label: 'Completeness', value: 72, color: 'bg-green-500' },
-                                { label: 'Assets', value: 80, color: 'bg-green-500' },
-                                { label: 'Relevance', value: 65, color: 'bg-orange-500' },
-                                { label: 'Engagement', value: 60, color: 'bg-orange-500' },
-                            ].map((item) => (
-                                <div key={item.label}>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm">{item.label}</span>
-                                        <span className="text-sm font-medium">{item.value}%</span>
-                                    </div>
-                                    <div className="bg-gray-200 rounded-full h-2">
-                                        <div
-                                            className={`${item.color} h-2 rounded-full`}
-                                            style={{ width: `${item.value}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
+            <div className="mt-6">
+              <div className="mb-2 text-sm font-medium">Areas of Interest</div>
+              <div className="flex flex-wrap gap-2">
+                {form.interests.map((interest) => (
+                  <span
+                    key={interest}
+                    className="flex items-center gap-1 rounded-full bg-indigo-100 px-3 py-1.5 text-sm text-indigo-700"
+                  >
+                    {interest}
                     <button
-                        onClick={handleSaveDraft}
-                        className={`w-full text-sm font-medium py-2.5 rounded-lg transition-colors ${saved ? 'bg-green-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          interests: current.interests.filter((item) => item !== interest),
+                        }))
+                      }
+                      className="text-indigo-400 hover:text-indigo-700"
                     >
-                        {saved ? '✓ Profile Saved!' : 'Generate my opportunity strategy'}
+                      <X className="h-3.5 w-3.5" />
                     </button>
-                </div>
+                  </span>
+                ))}
+                {showAddInterest ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newInterest}
+                      onChange={(event) => setNewInterest(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          addInterest();
+                        }
+
+                        if (event.key === "Escape") {
+                          setShowAddInterest(false);
+                        }
+                      }}
+                      placeholder="Type interest..."
+                      className="w-36 rounded-full border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      onClick={addInterest}
+                      className="rounded-full bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-700"
+                    >
+                      Add
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowAddInterest(true)}
+                    className="flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add
+                  </button>
+                )}
+              </div>
             </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <SelectField
+                label="Time Availability"
+                value={form.timeAvailability}
+                options={["< 5 hrs", "5 - 10 hrs", "10 - 15 hrs", "15+ hrs/week"]}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, timeAvailability: value }))
+                }
+              />
+              <SelectField
+                label="Readiness Level"
+                value={form.readinessLevel}
+                options={[
+                  "Just Exploring",
+                  "Actively Preparing",
+                  "Ready to Apply",
+                ]}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, readinessLevel: value }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <h2 className="mb-4 text-lg font-semibold">Assets & Readiness</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {data.assets.map((asset) => (
+                <div key={asset.id} className="rounded-lg border border-gray-200 p-4">
+                  <div className="mb-1 flex items-center justify-between">
+                    <div className="text-sm font-medium">{asset.label}</div>
+                    <div className="text-xs text-gray-500">{asset.completion}%</div>
+                  </div>
+                  <div className="mb-2 h-2 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className={`h-full ${
+                        asset.status === "complete"
+                          ? "bg-green-500"
+                          : asset.status === "warning"
+                            ? "bg-orange-500"
+                            : "bg-red-500"
+                      }`}
+                      style={{ width: `${asset.completion}%` }}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {asset.filename || asset.category || "Pending upload"}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Link
+              to="/documents"
+              className="mt-4 inline-block text-sm text-indigo-600 hover:underline"
+            >
+              Manage documents →
+            </Link>
+          </div>
         </div>
-    );
+
+        <div className="space-y-4">
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-indigo-600" />
+              <h3 className="font-semibold">AI Profile Summary</h3>
+            </div>
+            <div className="mb-2 text-sm text-gray-600">Match Quality</div>
+            <div className="mb-1 text-2xl font-semibold text-indigo-700">
+              {data.aiProfileSummary.matchQuality}
+            </div>
+            <div className="mb-4 text-sm text-gray-600">
+              Score: {data.aiProfileSummary.matchQualityScore}/100
+            </div>
+            <div className="space-y-2">
+              {data.aiProfileSummary.bestSuited.map((item) => (
+                <div key={item.label} className="rounded bg-indigo-50 px-3 py-2">
+                  <div className="text-sm font-medium text-indigo-700">{item.label}</div>
+                  <div className={`text-xs ${item.color}`}>{item.match}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h3 className="mb-4 font-semibold">Strength Breakdown</h3>
+            <div className="space-y-3">
+              {completenessCards.map((card) => (
+                <div key={card.label}>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span>{card.label}</span>
+                    <span className="font-medium">{card.value}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full bg-indigo-600"
+                      style={{ width: `${card.value}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h3 className="mb-4 font-semibold">Improvement Tips</h3>
+            <div className="space-y-3">
+              {data.improvementTips.map((tip) => (
+                <div key={tip.tip} className="rounded-lg bg-gray-50 p-3">
+                  <div className="text-sm font-medium">{tip.tip}</div>
+                  <div className="text-xs text-gray-600">{tip.sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h3 className="mb-4 font-semibold">Readiness Modules</h3>
+            <div className="space-y-3">
+              {data.readinessModules.slice(0, 4).map((module) => (
+                <Link
+                  key={module.id}
+                  to={module.href}
+                  className="block rounded-lg border border-gray-200 p-3 hover:border-indigo-300"
+                >
+                  <div className="text-sm font-medium">{module.title}</div>
+                  <div className="text-xs text-gray-600">
+                    {module.completion}% • {module.impact} impact
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function AssetCard({
-    title,
-    status,
-    filename,
-    link,
+function Field({
+  label,
+  value,
+  onChange,
 }: {
-    title: string;
-    status: string;
-    filename?: string;
-    link?: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
 }) {
-    const [isUpdating, setIsUpdating] = useState(false);
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+    </div>
+  );
+}
 
-    return (
-        <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-medium">{title}</div>
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-            </div>
-            <div className="text-xs text-green-600 mb-1">{status}</div>
-            {filename && <div className="text-xs text-gray-600">{filename}</div>}
-            {link && (
-                <div className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer hover:underline">
-                    {link}
-                </div>
-            )}
-            <div className="mt-3 flex gap-2">
-                <label className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer">
-                    {isUpdating ? 'Uploading...' : 'Update'}
-                    <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                                setIsUpdating(true);
-                                setTimeout(() => setIsUpdating(false), 1500);
-                            }
-                        }}
-                    />
-                </label>
-                {!link && (
-                    <button
-                        onClick={() => { if (confirm(`Disconnect ${title}?`)) {} }}
-                        className="text-xs text-gray-600 hover:text-gray-900"
-                    >
-                        Disconnect
-                    </button>
-                )}
-            </div>
-        </div>
-    );
+function SelectField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium">{label}</label>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        {options.map((option) => (
+          <option key={option}>{option}</option>
+        ))}
+      </select>
+    </div>
+  );
 }

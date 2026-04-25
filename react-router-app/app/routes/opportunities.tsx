@@ -1,212 +1,254 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
-import { Sparkles, Bookmark, BookmarkCheck, ChevronDown, Grid3x3, List, X, CheckCircle2, Star, TrendingUp } from 'lucide-react';
+import { useMemo, useState } from "react";
+import { Link, useLoaderData, useSearchParams } from "react-router";
+import {
+  Sparkles,
+  Bookmark,
+  BookmarkCheck,
+  Grid3x3,
+  List,
+  CheckCircle2,
+  Star,
+  TrendingUp,
+} from "lucide-react";
 
-export function loader() {
-  return {};
+import { apiGet, apiPost } from "../lib/api";
+import type { ApiOpportunity, OpportunitiesResponse } from "../types/api";
+
+const SORT_OPTIONS = [
+  { label: "Best Match", value: "best-match" },
+  { label: "Highest ROI", value: "highest-roi" },
+  { label: "Most Urgent", value: "most-urgent" },
+  { label: "Low Effort", value: "low-effort" },
+] as const;
+
+export async function loader({ request }: { request: Request }) {
+  const url = new URL(request.url);
+  const category = url.searchParams.get("category");
+  const sort = url.searchParams.get("sort") || "best-match";
+
+  return apiGet<OpportunitiesResponse>("/api/opportunities", {
+    category: category && category !== "All" ? category : undefined,
+    sort,
+  });
 }
 
 export default function Opportunities() {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [activeSort, setActiveSort] = useState('Best Match');
-  const [filters, setFilters] = useState([
-    { label: 'Course', value: 'Computer Science' },
-    { label: 'Year', value: '3rd Year' },
-    { label: 'CGPA', value: '3.60 - 3.74' },
-    { label: 'Goal', value: 'Industry Experience' },
-    { label: 'Effort', value: 'Any' },
-    { label: 'Deadline Urgency', value: 'Any' },
-    { label: 'Location', value: 'Any' },
-  ]);
+  const data = useLoaderData() as OpportunitiesResponse;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [savedState, setSavedState] = useState<Record<string, boolean>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
 
-  const allOpportunities = [
-    { id: "petronas-2025", tag: "Highly Matched", verified: true, logo: "https://logo.clearbit.com/petronas.com", title: "PETRONAS Digital Innovation Internship 2025", company: "PETRONAS", category: "Internships", deadline: "20 Jun 2025", estimatedValue: "RM 7,000 / month", fitScore: 96, effort: "Medium", eligibility: "High", roiScore: 92, recommendation: "Strong match with your skills in Python, data analysis and problem solving.", topPick: true },
-    { id: "adb-2025", verified: true, logo: "https://logo.clearbit.com/adb.org", title: "ADB-Japan Scholarship Program 2025", company: "Asian Development Bank", category: "Scholarships", deadline: "15 May 2025", estimatedValue: "Full Tuition + Living Allowance", fitScore: 97, effort: "High", eligibility: "High", roiScore: 90, recommendation: "Excellent fit for your academic profile and career goals.", topPick: true },
-    { id: "google-step-2025", tag: "Newly Added", verified: true, logo: "https://logo.clearbit.com/google.com", title: "Google STEP Internship (GAPAC) 2025", company: "Google", category: "Internships", deadline: "24 May 2025", estimatedValue: "RM 9,500 / month", fitScore: 96, effort: "Medium", eligibility: "Medium", roiScore: 91, recommendation: "Great opportunity to work on real-world projects at Google." },
-    { id: "icpc-2025", tag: "Trending", verified: true, logo: "https://logo.clearbit.com/icpc.global", title: "ICPC Asia Pacific Finals 2025", company: "ICPC Foundation", category: "Competitions", deadline: "15 Jun 2025", estimatedValue: "RM 2,000", fitScore: 88, effort: "Medium", eligibility: "High", roiScore: 85, recommendation: "Strong track record in programming competitions." },
-    { id: "khazanah-2025", tag: "Highly Matched", verified: true, logo: "https://logo.clearbit.com/khazanah.com.my", title: "Yayasan Khazanah Global Scholarship", company: "Yayasan Khazanah", category: "Scholarships", deadline: "30 Apr 2025", estimatedValue: "Full Tuition + Allowance", fitScore: 92, effort: "High", eligibility: "Medium", roiScore: 95, recommendation: "Prestigious scholarship matching your high CGPA." },
-    { id: "mdec-grant-2025", verified: true, logo: "https://logo.clearbit.com/mdec.my", title: "MDEC Digital Content Grant", company: "MDEC", category: "Grants", deadline: "01 Aug 2025", estimatedValue: "Up to RM 50,000", fitScore: 85, effort: "High", eligibility: "Medium", roiScore: 88, recommendation: "Good fit for your final year tech project." },
-    { id: "aws-cert-2025", tag: "Trending", verified: true, logo: "https://logo.clearbit.com/aws.amazon.com", title: "AWS Certified Solutions Architect", company: "Amazon Web Services", category: "Certifications", deadline: "Self-paced", estimatedValue: "RM 600", fitScore: 90, effort: "Medium", eligibility: "High", roiScore: 94, recommendation: "Highly sought after in the tech industry." },
-  ];
+  const activeCategory = searchParams.get("category") || "All";
+  const activeSort = searchParams.get("sort") || "best-match";
 
-  const filteredOpportunities = allOpportunities.filter(opp => activeCategory === 'All' || opp.category === activeCategory);
+  const categories = useMemo(
+    () => ["All", ...data.availableCategories.filter((category) => category !== "All")],
+    [data.availableCategories],
+  );
 
-  const sortedOpportunities = [...filteredOpportunities].sort((a, b) => {
-    if (activeSort === 'Best Match') return b.fitScore - a.fitScore;
-    if (activeSort === 'Highest ROI') return b.roiScore - a.roiScore;
-    if (activeSort === 'Low Effort') {
-      const rank: Record<string, number> = { Low: 1, Medium: 2, High: 3 };
-      return (rank[a.effort] || 4) - (rank[b.effort] || 4);
+  function updateFilters(next: { category?: string; sort?: string }) {
+    const params = new URLSearchParams(searchParams);
+
+    if (next.category !== undefined) {
+      if (!next.category || next.category === "All") {
+        params.delete("category");
+      } else {
+        params.set("category", next.category);
+      }
     }
-    if (activeSort === 'Most Urgent') {
-      if (a.deadline === 'Self-paced') return 1;
-      if (b.deadline === 'Self-paced') return -1;
-      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+
+    if (next.sort !== undefined) {
+      if (!next.sort || next.sort === "best-match") {
+        params.delete("sort");
+      } else {
+        params.set("sort", next.sort);
+      }
     }
-    return 0;
-  });
 
-  const removeFilter = (label: string) => {
-    setFilters(prev => prev.filter(f => f.label !== label));
-  };
+    setSearchParams(params);
+  }
 
-  const clearAllFilters = () => setFilters([]);
+  async function toggleSave(opportunityId: string) {
+    const nextSaved = !savedState[opportunityId];
+    setSavingId(opportunityId);
+    setSavedState((current) => ({ ...current, [opportunityId]: nextSaved }));
+
+    try {
+      await apiPost(`/api/opportunities/${opportunityId}/save`, {
+        saved: nextSaved,
+      });
+    } catch {
+      setSavedState((current) => ({ ...current, [opportunityId]: !nextSaved }));
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   return (
-    <div className="p-6 max-w-[1800px] mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto max-w-[1800px] p-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">Opportunities</h1>
+          <h1 className="mb-1 text-2xl font-semibold">Opportunities</h1>
+          <p className="text-sm text-gray-600">
+            Live recommendations ranked against your profile, urgency, and ROI.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => alert('Saved searches feature coming soon!')}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
-          >
-            <Bookmark className="w-4 h-4" />
-            Saved Searches
-          </button>
-        </div>
+        <Link
+          to="/profile"
+          className="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50"
+        >
+          Refine Preferences
+        </Link>
       </div>
 
-      <div className="flex items-center gap-6 mb-6 border-b border-gray-200">
-        {['All', 'Scholarships', 'Internships', 'Competitions', 'Grants', 'Certifications'].map(cat => (
+      <div className="mb-6 flex items-center gap-6 border-b border-gray-200">
+        {categories.map((category) => (
           <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={`pb-3 text-sm ${activeCategory === cat ? 'font-medium text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}
+            key={category}
+            onClick={() => updateFilters({ category })}
+            className={`pb-3 text-sm ${
+              activeCategory === category
+                ? "border-b-2 border-indigo-600 font-medium text-indigo-600"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
-            {cat}
+            {category}
           </button>
         ))}
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-        <div className="flex items-center gap-3 mb-4">
-          <Sparkles className="w-5 h-5 text-indigo-600" />
-          <span className="text-sm font-medium">AI Filters</span>
-          <span className="text-xs text-gray-500">Refine opportunities based on your profile and preferences</span>
-          <button onClick={clearAllFilters} className="ml-auto text-sm text-indigo-600 hover:text-indigo-700">Clear all</button>
-          <Link to="/profile" className="text-sm text-indigo-600 hover:text-indigo-700 px-3 py-1.5 bg-indigo-50 rounded-lg">Edit Filters</Link>
+      <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
+        <div className="mb-4 flex items-center gap-3">
+          <Sparkles className="h-5 w-5 text-indigo-600" />
+          <span className="text-sm font-medium">Profile Context</span>
+          <span className="text-xs text-gray-500">
+            These recommendations are grounded in your current profile.
+          </span>
+          <Link
+            to="/profile"
+            className="ml-auto rounded-lg bg-indigo-50 px-3 py-1.5 text-sm text-indigo-600 hover:text-indigo-700"
+          >
+            Edit Filters
+          </Link>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          {filters.map(f => (
-            <FilterChip key={f.label} label={f.label} value={f.value} onRemove={() => removeFilter(f.label)} />
-          ))}
-          {filters.length === 0 && <span className="text-xs text-gray-400">No filters active</span>}
+        <div className="flex flex-wrap gap-3">
+          <FilterChip label="Course" value={data.profileContext.course} />
+          <FilterChip label="Year" value={`Year ${data.profileContext.year}`} />
+          <FilterChip label="CGPA" value={data.profileContext.cgpaRange} />
+          <FilterChip label="Goal" value={data.profileContext.goal} />
+          <FilterChip
+            label="Category"
+            value={activeCategory === "All" ? "All opportunities" : activeCategory}
+          />
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-600">{sortedOpportunities.length} opportunities found</div>
+          <div className="text-sm text-gray-600">
+            {data.totalCount} opportunities found
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Sort by:</span>
-            {['Best Match', 'Highest ROI', 'Most Urgent', 'Low Effort'].map(sort => (
+            {SORT_OPTIONS.map((sort) => (
               <button
-                key={sort}
-                onClick={() => setActiveSort(sort)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${activeSort === sort ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                key={sort.value}
+                onClick={() => updateFilters({ sort: sort.value })}
+                className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                  activeSort === sort.value
+                    ? "bg-indigo-600 text-white"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
               >
-                {sort}
+                {sort.label}
               </button>
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1">
-          <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
-            <Grid3x3 className="w-4 h-4" />
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 p-1">
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`rounded p-1.5 ${
+              viewMode === "grid" ? "bg-gray-100" : "hover:bg-gray-50"
+            }`}
+          >
+            <Grid3x3 className="h-4 w-4" />
           </button>
-          <button onClick={() => setViewMode('list')} className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
-            <List className="w-4 h-4" />
+          <button
+            onClick={() => setViewMode("list")}
+            className={`rounded p-1.5 ${
+              viewMode === "list" ? "bg-gray-100" : "hover:bg-gray-50"
+            }`}
+          >
+            <List className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       <div className="flex gap-6">
         <div className="flex-1">
-          <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-4' : 'space-y-4'}>
-            {sortedOpportunities.map(opp => (
+          <div className={viewMode === "grid" ? "grid grid-cols-2 gap-4" : "space-y-4"}>
+            {data.items.map((opportunity) => (
               <OpportunityCard
-                key={opp.id}
-                id={opp.id}
-                tag={opp.tag}
-                verified={opp.verified}
-                logo={opp.logo}
-                title={opp.title}
-                company={opp.company}
-                category={opp.category}
-                deadline={opp.deadline}
-                estimatedValue={opp.estimatedValue}
-                fitScore={opp.fitScore}
-                effort={opp.effort}
-                eligibility={opp.eligibility}
-                roiScore={opp.roiScore}
-                recommendation={opp.recommendation}
-                topPick={opp.topPick}
+                key={opportunity.id}
+                opportunity={opportunity}
+                saved={Boolean(savedState[opportunity.id])}
+                saving={savingId === opportunity.id}
+                onToggleSave={() => toggleSave(opportunity.id)}
               />
             ))}
-          </div>
-          <div className="mt-6 flex justify-center">
-            <button
-              onClick={() => alert('More opportunities loading soon!')}
-              className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-            >
-              Load more <ChevronDown className="w-4 h-4 inline ml-2" />
-            </button>
           </div>
         </div>
 
         <div className="w-80 space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-indigo-600" />
               <h3 className="font-semibold">Why these are recommended</h3>
             </div>
             <div className="space-y-3 text-sm text-gray-700">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Matched to your academic profile, skills, and career goals</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>High eligibility-confidence based on your profile (Top 18%)</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span>Balanced mix of high impact and achievable opportunities</span>
-              </div>
+              {data.whyRecommended.map((item) => (
+                <div key={item} className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                  <span>{item}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
+          <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50 p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-indigo-600" />
               <h3 className="font-semibold">AI Compare</h3>
-              <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded ml-auto">Top 3 Picks</span>
+              <span className="ml-auto rounded bg-indigo-100 px-2 py-0.5 text-xs text-indigo-600">
+                {data.comparison.label}
+              </span>
             </div>
-            <div className="space-y-2 mb-4">
-              {[
-                { initial: 'P', bg: 'bg-teal-500', name: 'PETRONAS Internship 2025', type: 'Internship', score: 96 },
-                { initial: 'A', bg: 'bg-blue-600', name: 'ADB-Japan Scholarship 2025', type: 'Scholarship', score: 93 },
-                { initial: 'G', bg: 'bg-red-500', name: 'Google STEP Internship 2025', type: 'Internship', score: 90 },
-              ].map((item) => (
-                <div key={item.name} className="bg-white rounded-lg p-3 flex items-center gap-3">
-                  <div className={`w-10 h-10 ${item.bg} rounded flex-shrink-0 flex items-center justify-center`}>
-                    <span className="text-white font-semibold text-xs">{item.initial}</span>
+            <div className="mb-4 space-y-2">
+              {data.comparison.items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-lg bg-white p-3"
+                >
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded bg-indigo-600">
+                    <span className="text-xs font-semibold text-white">
+                      {item.name[0]}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium truncate">{item.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-medium">{item.name}</div>
                     <div className="text-xs text-gray-600">{item.type}</div>
                   </div>
-                  <div className="text-lg font-semibold text-green-600">{item.score}%</div>
+                  <div className="text-lg font-semibold text-green-600">
+                    {item.score}%
+                  </div>
                 </div>
               ))}
             </div>
             <Link
-              to="/ai-advisor?q=Compare+my+top+3+opportunities"
-              className="w-full bg-indigo-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center"
+              to="/ai-advisor?q=Compare+my+top+opportunities"
+              className="flex w-full items-center justify-center rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700"
             >
               View full comparison
             </Link>
@@ -217,86 +259,160 @@ export default function Opportunities() {
   );
 }
 
-function FilterChip({ label, value, onRemove }: { label: string; value: string; onRemove: () => void }) {
+function FilterChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5">
+    <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5">
       <span className="text-xs text-gray-500">{label}:</span>
       <span className="text-xs font-medium">{value}</span>
-      <button onClick={onRemove} className="hover:bg-gray-200 rounded p-0.5">
-        <X className="w-3 h-3 text-gray-500" />
-      </button>
     </div>
   );
 }
 
-function OpportunityCard({ id, tag, verified, logo, title, company, category, deadline, estimatedValue, fitScore, effort, eligibility, roiScore, recommendation, topPick }: {
-  id: string; tag?: string; verified?: boolean; logo?: string; title: string; company: string;
-  category: string; deadline: string; estimatedValue: string; fitScore: number; effort: string;
-  eligibility: string; roiScore: number; recommendation: string; topPick?: boolean;
+function OpportunityCard({
+  opportunity,
+  saved,
+  saving,
+  onToggleSave,
+}: {
+  opportunity: ApiOpportunity;
+  saved: boolean;
+  saving: boolean;
+  onToggleSave: () => void;
 }) {
-  const [bookmarked, setBookmarked] = useState(false);
-
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow relative">
-      {topPick && (
-        <div className="absolute -top-2 left-4 bg-indigo-600 text-white text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1">
-          <Star className="w-3 h-3" /> Top Pick
+    <div className="relative rounded-xl border border-gray-200 bg-white p-5 transition-shadow hover:shadow-lg">
+      {opportunity.topPick ? (
+        <div className="absolute -top-2 left-4 flex items-center gap-1 rounded-full bg-indigo-600 px-3 py-1 text-xs font-medium text-white">
+          <Star className="h-3 w-3" /> Top Pick
         </div>
-      )}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-start gap-3 flex-1">
-          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-            {logo && <img src={logo} alt={company} className="w-8 h-8 object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
+      ) : null}
+      <div className="mb-4 flex items-start justify-between">
+        <div className="flex flex-1 items-start gap-3">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100">
+            {opportunity.logo ? (
+              <img
+                src={opportunity.logo}
+                alt={opportunity.company}
+                className="h-8 w-8 object-contain"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              <span className="font-semibold">{opportunity.company[0]}</span>
+            )}
           </div>
           <div className="flex-1">
-            {tag && (
-              <span className={`text-xs font-medium px-2 py-0.5 rounded mb-1 inline-block ${tag === 'Highly Matched' ? 'bg-green-100 text-green-700' : tag === 'Newly Added' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
-                {tag}
+            {opportunity.tag ? (
+              <span
+                className={`mb-1 inline-block rounded px-2 py-0.5 text-xs font-medium ${
+                  opportunity.tag === "Highly Matched"
+                    ? "bg-green-100 text-green-700"
+                    : opportunity.tag === "Newly Added"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-orange-100 text-orange-700"
+                }`}
+              >
+                {opportunity.tag}
               </span>
-            )}
-            <Link to={`/opportunities/${id}`} className="block font-semibold text-sm hover:text-indigo-600 line-clamp-2 mb-1">{title}</Link>
-            <div className="text-xs text-gray-600">by {company} {verified && <span className="text-green-600">• Verified</span>}</div>
-            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded mt-1 inline-block">{category}</span>
+            ) : null}
+            <Link
+              to={`/opportunities/${opportunity.id}`}
+              className="mb-1 block text-sm font-semibold line-clamp-2 hover:text-indigo-600"
+              state={{ from: "opportunities" }}
+            >
+              {opportunity.title}
+            </Link>
+            <div className="text-xs text-gray-600">
+              by {opportunity.company}
+              {opportunity.verified ? (
+                <span className="text-green-600"> • Verified</span>
+              ) : null}
+            </div>
+            <span className="mt-1 inline-block rounded bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">
+              {opportunity.category}
+            </span>
           </div>
         </div>
-        <button onClick={() => setBookmarked(b => !b)} className="p-1.5 hover:bg-gray-100 rounded" title={bookmarked ? 'Remove bookmark' : 'Bookmark'}>
-          {bookmarked
-            ? <BookmarkCheck className="w-4 h-4 text-indigo-600" />
-            : <Bookmark className="w-4 h-4 text-gray-400" />}
+        <button
+          onClick={onToggleSave}
+          disabled={saving}
+          className="rounded p-1.5 hover:bg-gray-100"
+          title={saved ? "Remove bookmark" : "Bookmark"}
+        >
+          {saved ? (
+            <BookmarkCheck className="h-4 w-4 text-indigo-600" />
+          ) : (
+            <Bookmark className="h-4 w-4 text-gray-400" />
+          )}
         </button>
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div><div className="text-xs text-gray-500 mb-1">Deadline</div><div className="text-sm font-medium">{deadline}</div></div>
-        <div><div className="text-xs text-gray-500 mb-1">Est. Value</div><div className="text-sm font-medium">{estimatedValue}</div></div>
-      </div>
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="bg-green-50 rounded-lg p-2 text-center">
-          <div className="text-xs text-gray-600 mb-0.5">Fit Score</div>
-          <div className="text-lg font-semibold text-green-600">{fitScore}%</div>
+      <div className="mb-4 grid grid-cols-2 gap-3">
+        <div>
+          <div className="mb-1 text-xs text-gray-500">Deadline</div>
+          <div className="text-sm font-medium">{opportunity.deadline}</div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-2 text-center">
-          <div className="text-xs text-gray-600 mb-0.5">Effort</div>
-          <div className={`text-sm font-semibold ${effort === 'High' ? 'text-red-600' : effort === 'Medium' ? 'text-orange-600' : 'text-green-600'}`}>{effort}</div>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-2 text-center">
-          <div className="text-xs text-gray-600 mb-0.5">Eligibility</div>
-          <div className={`text-sm font-semibold ${eligibility === 'High' ? 'text-green-600' : eligibility === 'Medium' ? 'text-orange-600' : 'text-red-600'}`}>{eligibility}</div>
+        <div>
+          <div className="mb-1 text-xs text-gray-500">Est. Value</div>
+          <div className="text-sm font-medium">{opportunity.estimatedValue}</div>
         </div>
       </div>
-      <div className="flex items-center gap-1 mb-4 text-xs text-gray-600">
-        <TrendingUp className="w-3.5 h-3.5" />
-        <span>ROI Score: {roiScore}/100</span>
-      </div>
-      <div className="bg-indigo-50 rounded-lg p-3 mb-4">
-        <div className="flex items-start gap-2">
-          <Sparkles className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <div className="text-xs font-medium text-gray-900 mb-1">Why recommended:</div>
-            <div className="text-xs text-gray-700">{recommendation}</div>
+      <div className="mb-4 grid grid-cols-3 gap-2">
+        <div className="rounded-lg bg-green-50 p-2 text-center">
+          <div className="mb-0.5 text-xs text-gray-600">Fit Score</div>
+          <div className="text-lg font-semibold text-green-600">
+            {opportunity.fitScore}%
+          </div>
+        </div>
+        <div className="rounded-lg bg-gray-50 p-2 text-center">
+          <div className="mb-0.5 text-xs text-gray-600">Effort</div>
+          <div
+            className={`text-sm font-semibold ${
+              opportunity.effort === "High"
+                ? "text-red-600"
+                : opportunity.effort === "Medium"
+                  ? "text-orange-600"
+                  : "text-green-600"
+            }`}
+          >
+            {opportunity.effort}
+          </div>
+        </div>
+        <div className="rounded-lg bg-gray-50 p-2 text-center">
+          <div className="mb-0.5 text-xs text-gray-600">Eligibility</div>
+          <div
+            className={`text-sm font-semibold ${
+              opportunity.eligibility === "High"
+                ? "text-green-600"
+                : opportunity.eligibility === "Medium"
+                  ? "text-orange-600"
+                  : "text-red-600"
+            }`}
+          >
+            {opportunity.eligibility}
           </div>
         </div>
       </div>
-      <Link to={`/opportunities/${id}`} state={{ from: 'opportunities' }} className="w-full bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">
+      <div className="mb-4 flex items-center gap-1 text-xs text-gray-600">
+        <TrendingUp className="h-3.5 w-3.5" />
+        <span>ROI Score: {opportunity.roiScore}/100</span>
+      </div>
+      <div className="mb-4 rounded-lg bg-indigo-50 p-3">
+        <div className="flex items-start gap-2">
+          <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-600" />
+          <div>
+            <div className="mb-1 text-xs font-medium text-gray-900">
+              Why recommended:
+            </div>
+            <div className="text-xs text-gray-700">{opportunity.recommendation}</div>
+          </div>
+        </div>
+      </div>
+      <Link
+        to={`/opportunities/${opportunity.id}`}
+        state={{ from: "opportunities" }}
+        className="flex w-full items-center justify-center rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+      >
         View Opportunity
       </Link>
     </div>

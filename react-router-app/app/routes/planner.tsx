@@ -1,199 +1,316 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, Plus } from 'lucide-react';
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Sparkles } from "lucide-react";
+import { Link, useLoaderData } from "react-router";
 
-export function loader() {
-    return {};
+import { apiGet, apiPost } from "../lib/api";
+import type { ApiPlannerTask, PlannerResponse } from "../types/api";
+
+export async function loader() {
+  return apiGet<PlannerResponse>("/api/planner");
 }
 
 export default function Planner() {
-    const [weekOffset, setWeekOffset] = useState(0);
-    const [activeDay, setActiveDay] = useState(0);
-    const [tasks, setTasks] = useState([
-        { time: '09:00', duration: '90min', title: 'Write Essay', subtitle: 'Petronas Digital Innovation Internship', type: 'apply-now', done: false },
-        { time: '10:30', duration: '45min', title: 'Upload CV & Documents', subtitle: 'UNDP Young Talent Programme', type: 'apply-now', done: false },
-        { time: '12:00', duration: '60min', title: 'Take Online Assessment', subtitle: 'Shell Graduate Programme', type: 'prepare-soon', done: false },
-        { time: '14:00', duration: '35min', title: 'Break', subtitle: '', type: 'break', done: false },
-        { time: '15:00', duration: '45min', title: 'Research & Shortlist', subtitle: 'Track Later opportunities', type: 'track-later', done: false },
-        { time: '16:00', duration: '75min', title: 'Write Motivation Letter', subtitle: 'Maybank Young Talent Programme', type: 'apply-now', done: false },
-        { time: '17:00', duration: '60min', title: 'Skill Prep (Python Basics)', subtitle: 'Skill building', type: 'prepare-soon', done: false },
-    ]);
-    const [applied, setApplied] = useState(false);
-    const [showAddTask, setShowAddTask] = useState(false);
-    const [newTask, setNewTask] = useState('');
+  const data = useLoaderData() as PlannerResponse;
+  const [tasks, setTasks] = useState(data.tasks);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTask, setNewTask] = useState("");
+  const [isSavingTask, setIsSavingTask] = useState(false);
+  const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
+  const [optimization, setOptimization] = useState(data.optimization);
+  const [isOptimizing, setIsOptimizing] = useState(false);
 
-    const baseDate = 19 + weekOffset * 7;
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const month = weekOffset === 0 ? 'May 2025' : weekOffset === 1 ? 'Jun 2025' : 'Apr 2025';
+  useEffect(() => {
+    setTasks(data.tasks);
+    setOptimization(data.optimization);
+  }, [data.tasks, data.optimization]);
 
-    const taskBg: Record<string, string> = {
-        'apply-now': 'bg-green-50 border-green-200',
-        'prepare-soon': 'bg-orange-50 border-orange-200',
-        'track-later': 'bg-blue-50 border-blue-200',
-        'break': 'bg-gray-50 border-gray-200',
-    };
+  const categories = useMemo(
+    () =>
+      data.categories.map((category) => ({
+        ...category,
+        count:
+          category.title === "Apply Now"
+            ? tasks.filter((task) => task.type === "apply-now").length
+            : category.title === "Prepare Soon"
+              ? tasks.filter((task) => task.type === "prepare-soon").length
+              : category.title === "Track Later"
+                ? tasks.filter((task) => task.type === "track-later").length
+                : tasks.filter((task) => task.type === "skip").length,
+      })),
+    [data.categories, tasks],
+  );
 
-    const categories = [
-        { title: 'Apply Now', count: tasks.filter(t => t.type === 'apply-now').length, color: 'bg-green-50 border-green-200', effort: '6.5 hrs', roi: 'High ROI' },
-        { title: 'Prepare Soon', count: tasks.filter(t => t.type === 'prepare-soon').length, color: 'bg-orange-50 border-orange-200', effort: '4.0 hrs', roi: 'Medium ROI' },
-        { title: 'Track Later', count: tasks.filter(t => t.type === 'track-later').length, color: 'bg-blue-50 border-blue-200', effort: '2.0 hrs', roi: 'Low effort' },
-        { title: 'Skip for Now', count: 1, color: 'bg-gray-50 border-gray-200', effort: '0.5 hr', roi: 'Low ROI' },
-    ];
+  const totalEstimatedTimeHours = useMemo(
+    () =>
+      Number(
+        (
+          tasks.reduce((sum, task) => sum + (task.durationMinutes ?? 30), 0) / 60
+        ).toFixed(1),
+      ),
+    [tasks],
+  );
 
-    const handleAddTask = () => {
-        if (newTask.trim()) {
-            setTasks(prev => [...prev, {
-                time: '18:00',
-                duration: '30min',
-                title: newTask.trim(),
-                subtitle: '',
-                type: 'apply-now',
-                done: false,
-            }]);
-            setNewTask('');
-            setShowAddTask(false);
-        }
-    };
+  const focusScore = useMemo(() => {
+    if (tasks.length === 0) {
+      return data.focusScore;
+    }
 
-    const toggleTask = (idx: number) => {
-        setTasks(prev => prev.map((t, i) => i === idx ? { ...t, done: !t.done } : t));
-    };
+    const completed = tasks.filter((task) => task.completed).length;
+    return Math.max(data.focusScore, Math.round((completed / tasks.length) * 100));
+  }, [data.focusScore, tasks]);
 
-    const applyChange = () => {
-        setTasks(prev => prev.filter(t => t.title !== 'Skill Prep (Python Basics)'));
-        setApplied(true);
-    };
-
-    return (
-        <div className="p-6 max-w-[1600px] mx-auto">
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold mb-1">Weekly Priority Planner</h1>
-                <p className="text-gray-600">Your AI-generated action plan to maximize outcomes this week.</p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2">
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-4">
-                                <button onClick={() => setWeekOffset(w => w - 1)} className="p-1.5 hover:bg-gray-100 rounded">
-                                    <ChevronLeft className="w-5 h-5" />
-                                </button>
-                                <div className="text-lg font-semibold">{baseDate} - {baseDate + 6} {month} 📅</div>
-                                <button onClick={() => setWeekOffset(w => w + 1)} className="p-1.5 hover:bg-gray-100 rounded">
-                                    <ChevronRight className="w-5 h-5" />
-                                </button>
-                                <button onClick={() => setWeekOffset(0)} className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Today</button>
-                            </div>
-                            <button
-                                onClick={() => setShowAddTask(s => !s)}
-                                className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 flex items-center gap-1"
-                            >
-                                <Plus className="w-4 h-4" /> Add Task
-                            </button>
-                        </div>
-
-                        {showAddTask && (
-                            <div className="flex gap-2 mb-4">
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    value={newTask}
-                                    onChange={e => setNewTask(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleAddTask(); if (e.key === 'Escape') setShowAddTask(false); }}
-                                    placeholder="Task title..."
-                                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                />
-                                <button onClick={handleAddTask} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">Add</button>
-                                <button onClick={() => setShowAddTask(false)} className="px-3 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50">Cancel</button>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-7 gap-3 mb-6">
-                            {days.map((day, i) => (
-                                <button
-                                    key={day}
-                                    onClick={() => setActiveDay(i)}
-                                    className={`text-center border rounded-lg p-3 transition-colors ${activeDay === i ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 hover:bg-gray-100'}`}
-                                >
-                                    <div className="text-xs text-gray-600 mb-1">{day}</div>
-                                    <div className={`text-lg font-semibold ${activeDay === i ? 'text-indigo-600' : ''}`}>{baseDate + i}</div>
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-4 mb-6">
-                            {categories.map((cat) => (
-                                <div key={cat.title} className={`${cat.color} border rounded-lg p-4`}>
-                                    <div className="text-sm font-medium mb-1">{cat.title}</div>
-                                    <div className="text-2xl font-semibold mb-2">{cat.count} tasks</div>
-                                    <div className="text-xs text-gray-600">{cat.effort}</div>
-                                    <div className="text-xs">{cat.roi}</div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="bg-indigo-50 rounded-lg p-3 mb-6 flex items-center gap-2 text-sm">
-                            <span>Total Estimated Time: {tasks.length * 1.5} hrs</span>
-                            <span className="text-green-600 ml-auto">Focus Score: {tasks.filter(t => t.done).length > 0 ? Math.round((tasks.filter(t => t.done).length / tasks.length) * 100) : 82}%</span>
-                        </div>
-
-                        <div className="font-medium text-sm mb-3">{days[activeDay]}, {baseDate + activeDay} {month}</div>
-                        <div className="space-y-3">
-                            {tasks.map((task, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => toggleTask(idx)}
-                                    className={`${taskBg[task.type]} border rounded-lg p-4 flex gap-3 w-full text-left transition-opacity ${task.done ? 'opacity-50' : ''}`}
-                                >
-                                    <div className="text-sm text-gray-600 w-12">{task.time}</div>
-                                    <div className="flex-1">
-                                        <div className={`text-sm font-medium ${task.done ? 'line-through text-gray-400' : ''}`}>{task.title}</div>
-                                        {task.subtitle && <div className="text-xs text-gray-600">{task.subtitle}</div>}
-                                    </div>
-                                    <div className="text-xs text-gray-500">{task.duration}</div>
-                                    {task.done && <div className="text-xs text-green-600 font-medium">✓ Done</div>}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="bg-white rounded-xl border border-gray-200 p-5">
-                        <h3 className="font-semibold mb-4">Why this plan?</h3>
-                        <div className="space-y-3 text-sm text-gray-700">
-                            {['Focus on high-ROI opportunities with strong fit and deadlines within your focus window.', 'Essay and assignments scheduled when your focus is highest.', 'Time set aside for skill-building and research to increase long-term success.'].map((reason) => (
-                                <div key={reason} className="flex items-start gap-2">
-                                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0"><div className="w-2 h-2 bg-green-600 rounded-full"></div></div>
-                                    <span>{reason}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border border-orange-100 p-5">
-                        <h3 className="font-semibold mb-3">Reallocate for better ROI</h3>
-                        <div className="bg-white rounded-lg p-3 mb-3">
-                            <div className="text-sm mb-2">Move "Skill Prep (Python Basics)" to Track Later</div>
-                            <div className="text-xs text-gray-600">You have 3 higher-priority deadlines. This protects your peak hours today.</div>
-                        </div>
-                        {applied ? (
-                            <div className="w-full bg-green-600 text-white text-sm font-medium py-2 rounded-lg flex items-center justify-center gap-2">
-                                ✓ Change Applied!
-                            </div>
-                        ) : (
-                            <button onClick={applyChange} className="w-full bg-indigo-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-indigo-700">
-                                Apply Change
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="bg-white rounded-xl border border-gray-200 p-5">
-                        <h3 className="font-semibold mb-3">Focus Tip 💡</h3>
-                        <div className="text-sm text-gray-700">Complete the essay early. Submitting 3-5 days before the deadline increases your chances by 18%.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  async function toggleTask(taskId: string) {
+    const previous = tasks;
+    setTogglingTaskId(taskId);
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              completed: !task.completed,
+              done: !task.done,
+            }
+          : task,
+      ),
     );
+
+    try {
+      const updated = await apiPost<ApiPlannerTask>(`/api/planner/tasks/${taskId}/toggle`);
+      setTasks((current) =>
+        current.map((task) => (task.id === taskId ? updated : task)),
+      );
+    } catch {
+      setTasks(previous);
+    } finally {
+      setTogglingTaskId(null);
+    }
+  }
+
+  async function handleAddTask() {
+    if (!newTask.trim() || isSavingTask) {
+      return;
+    }
+
+    setIsSavingTask(true);
+
+    try {
+      const created = await apiPost<ApiPlannerTask>("/api/planner/tasks", {
+        title: newTask.trim(),
+        subtitle: "Manual focus item",
+        type: "apply-now",
+        duration: "30min",
+      });
+
+      setTasks((current) => [created, ...current]);
+      setNewTask("");
+      setShowAddTask(false);
+    } finally {
+      setIsSavingTask(false);
+    }
+  }
+
+  async function optimizePlan() {
+    if (isOptimizing) {
+      return;
+    }
+
+    setIsOptimizing(true);
+
+    try {
+      const optimized = await apiPost<
+        PlannerResponse & { optimizedTasks?: ApiPlannerTask[] }
+      >("/api/planner/optimize");
+      setOptimization(optimized.optimization);
+      setTasks(optimized.optimizedTasks ?? optimized.tasks);
+    } finally {
+      setIsOptimizing(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-[1600px] p-6">
+      <div className="mb-6">
+        <h1 className="mb-1 text-2xl font-semibold">Weekly Priority Planner</h1>
+        <p className="text-gray-600">
+          Your AI-generated action plan to maximize outcomes this week.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-6">
+        <div className="col-span-2">
+          <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <div className="text-lg font-semibold">{data.weekLabel}</div>
+                <div className="text-sm text-gray-600">
+                  Total Estimated Time: {totalEstimatedTimeHours} hrs
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowAddTask((value) => !value)}
+                  className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700"
+                >
+                  <Plus className="h-4 w-4" /> Add Task
+                </button>
+                <button
+                  onClick={optimizePlan}
+                  disabled={isOptimizing}
+                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-60"
+                >
+                  {isOptimizing ? "Optimizing..." : "Optimize Plan"}
+                </button>
+              </div>
+            </div>
+
+            {showAddTask ? (
+              <div className="mb-4 flex gap-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={newTask}
+                  onChange={(event) => setNewTask(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      handleAddTask();
+                    }
+
+                    if (event.key === "Escape") {
+                      setShowAddTask(false);
+                    }
+                  }}
+                  placeholder="Task title..."
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={handleAddTask}
+                  disabled={isSavingTask}
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-60"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => setShowAddTask(false)}
+                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : null}
+
+            <div className="mb-6 grid grid-cols-4 gap-4">
+              {categories.map((category) => (
+                <div
+                  key={category.title}
+                  className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+                >
+                  <div className="mb-1 text-sm font-medium">{category.title}</div>
+                  <div className="mb-2 text-2xl font-semibold">{category.count} tasks</div>
+                  <div className="text-xs text-gray-600">{category.effort}</div>
+                  <div className="text-xs">{category.roi}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mb-6 flex items-center gap-2 rounded-lg bg-indigo-50 p-3 text-sm">
+              <span>Total Estimated Time: {totalEstimatedTimeHours} hrs</span>
+              <span className="ml-auto text-green-600">Focus Score: {focusScore}%</span>
+            </div>
+
+            <div className="space-y-3">
+              {tasks.map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => toggleTask(task.id)}
+                  disabled={togglingTaskId === task.id}
+                  className={`flex w-full gap-3 rounded-lg border p-4 text-left transition-opacity ${
+                    task.completed
+                      ? "border-green-200 bg-green-50 opacity-70"
+                      : task.type === "apply-now"
+                        ? "border-green-200 bg-green-50"
+                        : task.type === "prepare-soon"
+                          ? "border-orange-200 bg-orange-50"
+                          : task.type === "track-later"
+                            ? "border-blue-200 bg-blue-50"
+                            : "border-gray-200 bg-gray-50"
+                  }`}
+                >
+                  <div className="w-12 text-sm text-gray-600">{task.time || "--:--"}</div>
+                  <div className="flex-1">
+                    <div
+                      className={`text-sm font-medium ${
+                        task.completed ? "text-gray-400 line-through" : ""
+                      }`}
+                    >
+                      {task.title}
+                    </div>
+                    {task.subtitle ? (
+                      <div className="text-xs text-gray-600">{task.subtitle}</div>
+                    ) : null}
+                    {task.opportunityId ? (
+                      <Link
+                        to={`/opportunities/${task.opportunityId}`}
+                        onClick={(event) => event.stopPropagation()}
+                        className="mt-2 inline-block text-xs text-indigo-600 hover:underline"
+                      >
+                        View related opportunity
+                      </Link>
+                    ) : null}
+                  </div>
+                  <div className="text-xs text-gray-500">{task.duration}</div>
+                  {task.completed ? (
+                    <div className="text-xs font-medium text-green-600">Done</div>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h3 className="mb-4 font-semibold">Why this plan?</h3>
+            <div className="space-y-3 text-sm text-gray-700">
+              {data.rationale.map((reason) => (
+                <div key={reason} className="flex items-start gap-2">
+                  <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
+                    <div className="h-2 w-2 rounded-full bg-green-600" />
+                  </div>
+                  <span>{reason}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-orange-100 bg-gradient-to-br from-orange-50 to-red-50 p-5">
+            <h3 className="mb-3 font-semibold">{optimization.title}</h3>
+            <div className="rounded-lg bg-white p-3 text-sm text-gray-700">
+              {optimization.text}
+            </div>
+            <button
+              onClick={optimizePlan}
+              disabled={isOptimizing}
+              className="mt-3 w-full rounded-lg bg-orange-600 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-60"
+            >
+              {isOptimizing ? "Applying..." : "Apply Optimization"}
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50 p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-indigo-600" />
+              <h3 className="font-semibold">AI Planning Tip</h3>
+            </div>
+            <p className="mb-4 text-sm text-gray-700">{data.focusTip}</p>
+            <Link
+              to="/ai-advisor?q=Help+me+optimize+my+weekly+plan"
+              className="flex w-full items-center justify-center rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              Ask AI Advisor
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

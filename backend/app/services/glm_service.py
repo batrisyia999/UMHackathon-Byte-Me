@@ -1130,6 +1130,9 @@ class GLMService:
         behavior_signals = context.get("behaviorSignals", {})
         preferred_categories = behavior_signals.get("preferredCategories", [])
 
+        def normalize(text: str) -> str:
+            return text.lower().replace("/", " ").replace("-", " ").strip()
+
         def top_by_stage() -> list[dict[str, Any]]:
             ranked = sorted(
                 top_opportunities,
@@ -1147,6 +1150,49 @@ class GLMService:
 
         def weak_modules() -> list[dict[str, Any]]:
             return sorted(readiness_modules, key=lambda item: item["completion"])[:3]
+
+        def primary_target() -> dict[str, Any] | None:
+            return scholarship_opportunities[0] if scholarship_opportunities else (top_opportunities[0] if top_opportunities else None)
+
+        def gap_summary() -> tuple[dict[str, Any] | None, list[str], list[dict[str, Any]], str | None, int | None]:
+            target = primary_target()
+            missing = [str(item).strip() for item in (target.get("missingRequirements", []) if target else []) if str(item).strip()]
+            weak = weak_modules()
+            matched_module = None
+
+            for requirement in missing:
+                normalized_requirement = normalize(requirement)
+                for module in weak:
+                    normalized_title = normalize(str(module.get("title", "")))
+                    if normalized_requirement in normalized_title or normalized_title in normalized_requirement:
+                        matched_module = module
+                        break
+                if matched_module:
+                    break
+
+            primary_label = None
+            primary_completion = None
+            if matched_module:
+                primary_label = str(matched_module.get("title", "top readiness gap"))
+                primary_completion = int(matched_module.get("completion", 0))
+            elif missing:
+                primary_label = missing[0]
+            elif weak:
+                primary_label = str(weak[0].get("title", "top readiness gap"))
+                primary_completion = int(weak[0].get("completion", 0))
+
+            return target, missing, weak, primary_label, primary_completion
+
+        def fit_uplift_estimate(
+            target: dict[str, Any] | None,
+            weak: list[dict[str, Any]],
+            missing: list[str],
+        ) -> tuple[int, int]:
+            current_fit = int((target or {}).get("fitScore", 0))
+            readiness_drag = sum(max(0, 100 - int(item.get("completion", 0))) for item in weak[:3])
+            uplift = max(4, min(18, round(readiness_drag / 18) + min(6, len(missing) * 2)))
+            projected_fit = min(95, current_fit + uplift)
+            return uplift, projected_fit
 
         def base_ai_fields(text: str, *, cited_ids: list[str], actions: list[str], prompts: list[str], uncertain: list[str] | None = None) -> dict[str, Any]:
             return {
@@ -1248,10 +1294,120 @@ class GLMService:
                 uncertain=["scholarship_competitiveness"] if not picks else [],
             )
 
+        if any(token in question for token in ["which missing asset", "matters most", "most important gap", "highest impact gap"]):
+            target, missing, weak, primary_label, primary_completion = gap_summary()
+            response_parts = []
+            if primary_label:
+                response_parts.append(
+                    f"The single highest-impact asset to fix first is {primary_label}"
+                    + (
+                        f" because it is one of your weakest readiness areas at {primary_completion}%."
+                        if primary_completion is not None
+                        else "."
+                    )
+                )
+            if target:
+                response_parts.append(
+                    f"It is the clearest blocker for {target['title']}, which is currently one of your strongest matches."
+                )
+            if len(weak) > 1:
+                response_parts.append(
+                    "After that, address "
+                    + ", ".join(f"{item['title']} ({item['completion']}%)" for item in weak[1:3])
+                    + "."
+                )
+            elif weak:
+                response_parts.append("Once that is done, revisit the next weakest readiness area.")
+            if missing and primary_label and primary_label not in missing:
+                response_parts.append(
+                    "The required assets currently showing up for the target opportunity are "
+                    + ", ".join(missing[:3])
+                    + "."
+                )
+            return base_ai_fields(
+                " ".join(part for part in response_parts if part),
+                cited_ids=[target["id"]] if target else [],
+                actions=[f"Fix {primary_label}"] if primary_label else ["Fix the top readiness blocker first."],
+                prompts=[
+                    "What can I fix in the next 3 days?",
+                    "How much would my fit improve if I close these gaps?",
+                    "Which opportunity benefits most if I fix this first?",
+                ],
+                uncertain=["gap_priority"] if not primary_label else [],
+            )
+
+        if any(token in question for token in ["next 3 days", "3 days", "three days", "next few days"]):
+            target, _, weak, primary_label, _ = gap_summary()
+            actions: list[str] = []
+            if primary_label:
+                actions.append(f"Spend your first focused session on {primary_label}.")
+            for item in weak[1:3]:
+                actions.append(f"Make visible progress on {item['title']}.")
+            if target:
+                actions.append(f"Return to {target['title']} once the gaps above are improved.")
+
+            response_lines = ["Use the next 3 days as a short recovery sprint:"]
+            if primary_label:
+                response_lines.append(f"Day 1: Fix {primary_label} and get it to a usable submission state.")
+            if len(weak) > 1:
+                response_lines.append(
+                    f"Day 2: Improve {weak[1]['title']} so it stops dragging your readiness score."
+                )
+            if target:
+                response_lines.append(
+                    f"Day 3: Re-open {target['title']} and complete the next application step."
+                )
+            return base_ai_fields(
+                "\n".join(response_lines),
+                cited_ids=[target["id"]] if target else [],
+                actions=actions[:3] or ["Complete one concrete readiness improvement each day."],
+                prompts=[
+                    "Which missing asset matters most?",
+                    "What should I do first today?",
+                    "How much would my fit improve if I close these gaps?",
+                ],
+            )
+
+        if any(token in question for token in ["fit improve", "improve if i close", "close these gaps", "unlock more fit", "how much would my fit"]):
+            target, missing, weak, primary_label, _ = gap_summary()
+            uplift, projected_fit = fit_uplift_estimate(target, weak, missing)
+            current_fit = int((target or {}).get("fitScore", 0))
+            response_parts = []
+            if target:
+                response_parts.append(
+                    f"If you close the top gaps for {target['title']}, your fit could move from about {current_fit}% to roughly {projected_fit}%."
+                )
+            else:
+                response_parts.append(
+                    f"Closing the current readiness gaps should improve your effective fit by roughly {uplift} points."
+                )
+            if primary_label:
+                response_parts.append(f"The biggest lift would come from fixing {primary_label} first.")
+            if projected_fit >= 80:
+                response_parts.append(
+                    "That should be enough to move a strong option closer to apply-now territory."
+                )
+            else:
+                response_parts.append(
+                    "That would improve competitiveness, but you would still want one more quality pass before treating it as apply-now."
+                )
+            return base_ai_fields(
+                " ".join(response_parts),
+                cited_ids=[target["id"]] if target else [],
+                actions=[
+                    f"Raise {primary_label} first." if primary_label else "Close the weakest readiness gap first.",
+                    "Re-check your top opportunity after the update.",
+                ],
+                prompts=[
+                    "Which missing asset matters most?",
+                    "What can I fix in the next 3 days?",
+                    "Which opportunity should I prioritize after that?",
+                ],
+                uncertain=["fit_uplift_estimate"],
+            )
+
         if any(token in question for token in ["missing", "gap", "block", "unlock"]):
-            target = scholarship_opportunities[0] if scholarship_opportunities else (top_opportunities[0] if top_opportunities else None)
-            missing = target.get("missingRequirements", []) if target else []
-            weak = weak_modules()
+            target, missing, weak, _, _ = gap_summary()
             response_parts = []
             if target:
                 response_parts.append(

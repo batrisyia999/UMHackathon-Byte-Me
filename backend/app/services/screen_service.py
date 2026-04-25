@@ -116,6 +116,9 @@ class ScreenService:
             default={"resources": [], "webinars": []},
         )
 
+    def _save_resources(self, payload: ResourceState) -> None:
+        self.store.save_model(self.store.statePath("resources.json"), payload)
+
     def _load_advisor_history(self) -> list[AdvisorMessageState]:
         return self.store.load_model(
             self.store.statePath("advisor_history.json"),
@@ -1636,6 +1639,44 @@ class ScreenService:
             "webinars": [item.model_dump(mode="json") for item in payload.webinars],
             "categories": ["All Resources", "Guides", "Templates", "Videos", "Webinars"],
         }
+
+    def download_resource(self, resource_id: str) -> dict[str, Any] | None:
+        payload = self._load_resources()
+        changed = None
+        updated_resources = []
+        for item in payload.resources:
+            if item.id == resource_id:
+                next_downloads = item.downloads if item.downloaded else item.downloads + 1
+                changed = item.model_copy(
+                    update={
+                        "downloads": next_downloads,
+                        "downloaded": True,
+                    }
+                )
+                updated_resources.append(changed)
+            else:
+                updated_resources.append(item)
+        if changed is None:
+            return None
+        saved_payload = payload.model_copy(update={"resources": updated_resources})
+        self._save_resources(saved_payload)
+        return changed.model_dump(mode="json")
+
+    def register_webinar(self, webinar_id: str) -> dict[str, Any] | None:
+        payload = self._load_resources()
+        changed = None
+        updated_webinars = []
+        for item in payload.webinars:
+            if item.id == webinar_id:
+                changed = item.model_copy(update={"registered": True})
+                updated_webinars.append(changed)
+            else:
+                updated_webinars.append(item)
+        if changed is None:
+            return None
+        saved_payload = payload.model_copy(update={"webinars": updated_webinars})
+        self._save_resources(saved_payload)
+        return changed.model_dump(mode="json")
 
     def search(self, query: str | None = None) -> dict[str, Any]:
         token = (query or "").strip().lower()

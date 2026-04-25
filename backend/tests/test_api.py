@@ -105,6 +105,35 @@ def test_advisor_chat_uses_question_and_returns_grounded_fallback(client):
     assert any(opportunity_id for opportunity_id in payload["citedOpportunityIds"])
 
 
+def test_advisor_gap_followups_return_distinct_fallback_responses(client):
+    asset = client.post(
+        "/api/advisor/chat",
+        json={"message": "Which missing asset matters most?", "history": []},
+    )
+    sprint = client.post(
+        "/api/advisor/chat",
+        json={"message": "What can I fix in the next 3 days?", "history": []},
+    )
+    uplift = client.post(
+        "/api/advisor/chat",
+        json={"message": "How much would my fit improve if I close these gaps?", "history": []},
+    )
+
+    assert asset.status_code == 200
+    assert sprint.status_code == 200
+    assert uplift.status_code == 200
+
+    asset_payload = asset.json()
+    sprint_payload = sprint.json()
+    uplift_payload = uplift.json()
+
+    assert "highest-impact asset" in asset_payload["response"].lower()
+    assert "next 3 days" in sprint_payload["response"].lower()
+    assert "fit could move" in uplift_payload["response"].lower()
+    assert asset_payload["response"] != sprint_payload["response"]
+    assert sprint_payload["response"] != uplift_payload["response"]
+
+
 def test_legacy_opportunity_aliases_resolve_for_frontend_ids(client):
     response = client.get("/api/opportunities/petronas-2025")
     assert response.status_code == 200
@@ -184,6 +213,33 @@ def test_network_supports_connect_and_message_actions(client):
     )
     assert messaged.status_code == 200
     assert messaged.json()["message"] == "Hello mentor"
+
+
+def test_resources_support_download_and_webinar_registration(client):
+    resources = client.get("/api/resources")
+    assert resources.status_code == 200
+    payload = resources.json()
+    assert "downloaded" in payload["resources"][0]
+    assert "registered" in payload["webinars"][0]
+
+    resource_id = payload["resources"][0]["id"]
+    starting_downloads = payload["resources"][0]["downloads"]
+    downloaded = client.post(f"/api/resources/{resource_id}/download")
+    assert downloaded.status_code == 200
+    assert downloaded.json()["downloaded"] is True
+    assert downloaded.json()["downloads"] == starting_downloads + 1
+
+    webinar_id = payload["webinars"][0]["id"]
+    registered = client.post(f"/api/resources/webinars/{webinar_id}/register")
+    assert registered.status_code == 200
+    assert registered.json()["registered"] is True
+
+    refreshed = client.get("/api/resources").json()
+    refreshed_resource = next(item for item in refreshed["resources"] if item["id"] == resource_id)
+    refreshed_webinar = next(item for item in refreshed["webinars"] if item["id"] == webinar_id)
+    assert refreshed_resource["downloaded"] is True
+    assert refreshed_resource["downloads"] == starting_downloads + 1
+    assert refreshed_webinar["registered"] is True
 
 
 def test_settings_endpoint_matches_latest_frontend_sections(client):

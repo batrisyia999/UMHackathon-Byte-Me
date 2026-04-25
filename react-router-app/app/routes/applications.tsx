@@ -1,128 +1,249 @@
-import { useState } from 'react';
-import { Clock, CheckCircle2, XCircle } from 'lucide-react';
-import { Link } from 'react-router';
+import { useEffect, useState } from "react";
+import { Link, useLoaderData } from "react-router";
 
-export function loader() {
-    return {};
+import { apiGet, apiPatch } from "../lib/api";
+import type { ApplicationsResponse } from "../types/api";
+
+export async function loader() {
+  return apiGet<ApplicationsResponse>("/api/applications");
 }
 
 export default function Applications() {
-    const [activeFilter, setActiveFilter] = useState('All');
-    const [applications, setApplications] = useState([
-        { title: 'PETRONAS Digital Innovation Internship 2025', company: 'PETRONAS', status: 'submitted', submittedDate: '10 May 2025', deadline: '31 May 2025', stage: 'Application Review', progress: 60 },
-        { title: 'Google STEP Internship (GAPAC) 2025', company: 'Google', status: 'in-progress', submittedDate: 'Not submitted', deadline: '24 May 2025', stage: 'Completing Application', progress: 75 },
-        { title: 'ADB-Japan Scholarship Program 2025', company: 'Asian Development Bank', status: 'under-review', submittedDate: '5 May 2025', deadline: '15 May 2025', stage: 'Document Verification', progress: 100 },
-        { title: 'Maybank Young Talent Programme 2025', company: 'Maybank', status: 'accepted', submittedDate: '1 May 2025', deadline: '28 May 2025', stage: 'Interview Scheduled', progress: 100, interviewDate: '20 May 2025' },
-        { title: 'Shell Graduate Programme 2026', company: 'Shell', status: 'in-progress', submittedDate: 'Not submitted', deadline: '30 Jun 2025', stage: 'Preparing Documents', progress: 40 },
-        { title: 'Khazanah Global Scholarship 2026', company: 'Khazanah', status: 'rejected', submittedDate: '15 Apr 2025', deadline: '1 Sep 2026', stage: 'Application Rejected', progress: 100 },
-    ]);
+  const data = useLoaderData() as ApplicationsResponse;
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [applications, setApplications] = useState(data.items);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-    const statusConfig: Record<string, { bg: string; border: string; text: string; label: string }> = {
-        'in-progress': { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', label: 'In Progress' },
-        'submitted': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', label: 'Submitted' },
-        'under-review': { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', label: 'Under Review' },
-        'accepted': { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', label: 'Accepted' },
-        'rejected': { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', label: 'Rejected' },
-    };
+  useEffect(() => {
+    setApplications(data.items);
+  }, [data.items]);
 
-    const filterMap: Record<string, string> = {
-        'In Progress': 'in-progress',
-        'Submitted': 'submitted',
-        'Under Review': 'under-review',
-        'Accepted': 'accepted',
-        'Rejected': 'rejected',
-    };
+  const statusConfig: Record<
+    string,
+    { bg: string; border: string; text: string; label: string }
+  > = {
+    "in-progress": {
+      bg: "bg-orange-50",
+      border: "border-orange-200",
+      text: "text-orange-700",
+      label: "In Progress",
+    },
+    submitted: {
+      bg: "bg-blue-50",
+      border: "border-blue-200",
+      text: "text-blue-700",
+      label: "Submitted",
+    },
+    "under-review": {
+      bg: "bg-purple-50",
+      border: "border-purple-200",
+      text: "text-purple-700",
+      label: "Under Review",
+    },
+    accepted: {
+      bg: "bg-green-50",
+      border: "border-green-200",
+      text: "text-green-700",
+      label: "Accepted",
+    },
+    rejected: {
+      bg: "bg-red-50",
+      border: "border-red-200",
+      text: "text-red-700",
+      label: "Rejected",
+    },
+  };
 
-    const filtered = activeFilter === 'All' ? applications : applications.filter(a => a.status === filterMap[activeFilter]);
+  const filterMap: Record<string, string> = {
+    "In Progress": "in-progress",
+    Submitted: "submitted",
+    "Under Review": "under-review",
+    Accepted: "accepted",
+    Rejected: "rejected",
+  };
 
-    const continueApplication = (title: string) => {
-        setApplications(prev => prev.map(a =>
-            a.title === title ? { ...a, progress: Math.min(100, a.progress + 10) } : a
-        ));
-    };
+  const filtered =
+    activeFilter === "All"
+      ? applications
+      : applications.filter((item) => item.status === filterMap[activeFilter]);
 
-    return (
-        <div className="p-6 max-w-[1600px] mx-auto">
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold mb-1">Applications</h1>
-                <p className="text-gray-600">Track your submitted applications and their status.</p>
-            </div>
+  async function continueApplication(applicationId: string) {
+    const current = applications.find((item) => item.id === applicationId);
 
-            <div className="grid grid-cols-4 gap-4 mb-6">
-                {[
-                    { title: 'Total Applications', value: String(applications.length) },
-                    { title: 'In Progress', value: String(applications.filter(a => a.status === 'in-progress').length) },
-                    { title: 'Under Review', value: String(applications.filter(a => a.status === 'under-review').length) },
-                    { title: 'Accepted', value: String(applications.filter(a => a.status === 'accepted').length) },
-                ].map((stat) => (
-                    <div key={stat.title} className="bg-white rounded-xl border border-gray-200 p-5">
-                        <div className="text-xs text-gray-500 mb-2">{stat.title}</div>
-                        <div className="text-2xl font-semibold">{stat.value}</div>
-                    </div>
-                ))}
-            </div>
+    if (!current) {
+      return;
+    }
 
-            <div className="flex items-center gap-3 mb-6">
-                {['All', 'In Progress', 'Submitted', 'Under Review', 'Accepted', 'Rejected'].map((filter) => (
-                    <button
-                        key={filter}
-                        onClick={() => setActiveFilter(filter)}
-                        className={`px-4 py-2 text-sm rounded-lg transition-colors ${activeFilter === filter ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                        {filter}
-                    </button>
-                ))}
-            </div>
+    const nextProgress = Math.min(100, current.progress + 10);
+    const nextStatus = nextProgress >= 100 ? "submitted" : current.status;
+    const nextStage =
+      nextProgress >= 100 ? "Application Submitted" : current.stage;
+    const previous = applications;
 
-            <div className="space-y-4">
-                {filtered.map((app) => {
-                    const config = statusConfig[app.status];
-                    return (
-                        <div key={app.title} className="bg-white rounded-xl border border-gray-200 p-6">
-                            <div className="flex items-start justify-between mb-4">
-                                <div>
-                                    <h3 className="font-semibold text-lg mb-1">{app.title}</h3>
-                                    <p className="text-sm text-gray-600">by {app.company}</p>
-                                </div>
-                                <div className={`flex items-center gap-2 ${config.bg} ${config.border} border px-3 py-1.5 rounded-full ${config.text}`}>
-                                    <span className="text-xs font-medium">{config.label}</span>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-4 gap-4 mb-4">
-                                <div><div className="text-xs text-gray-500 mb-1">Submitted</div><div className="text-sm font-medium">{app.submittedDate}</div></div>
-                                <div><div className="text-xs text-gray-500 mb-1">Deadline</div><div className="text-sm font-medium">{app.deadline}</div></div>
-                                <div><div className="text-xs text-gray-500 mb-1">Current Stage</div><div className="text-sm font-medium">{app.stage}</div></div>
-                                {'interviewDate' in app && app.interviewDate && <div><div className="text-xs text-gray-500 mb-1">Interview</div><div className="text-sm font-medium text-green-600">{app.interviewDate}</div></div>}
-                            </div>
-                            <div className="mb-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs text-gray-600">Application Progress</span>
-                                    <span className="text-xs font-medium">{app.progress}%</span>
-                                </div>
-                                <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
-                                    <div className={`h-full rounded-full transition-all ${app.status === 'rejected' ? 'bg-red-500' : app.status === 'accepted' ? 'bg-green-500' : 'bg-indigo-600'}`} style={{ width: `${app.progress}%` }}></div>
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <Link to={`/opportunities/${app.company.toLowerCase().replace(/\s+/g, '-')}-2025`} state={{ from: 'applications' }} className="px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg">View Details</Link>
-                                {app.status === 'in-progress' && (
-                                    <button
-                                        onClick={() => continueApplication(app.title)}
-                                        className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
-                                    >
-                                        Continue Application
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-                {filtered.length === 0 && (
-                    <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
-                        No applications in this category.
-                    </div>
-                )}
-            </div>
-        </div>
+    setUpdatingId(applicationId);
+    setApplications((items) =>
+      items.map((item) =>
+        item.id === applicationId
+          ? {
+              ...item,
+              progress: nextProgress,
+              status: nextStatus,
+              stage: nextStage,
+            }
+          : item,
+      ),
     );
+
+    try {
+      const updated = await apiPatch<ApplicationsResponse["items"][number]>(
+        `/api/applications/${applicationId}`,
+        {
+          progress: nextProgress,
+          status: nextStatus,
+          stage: nextStage,
+        },
+      );
+
+      setApplications((items) =>
+        items.map((item) => (item.id === applicationId ? updated : item)),
+      );
+    } catch {
+      setApplications(previous);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-[1600px] p-6">
+      <div className="mb-6">
+        <h1 className="mb-1 text-2xl font-semibold">Applications</h1>
+        <p className="text-gray-600">
+          Track your submitted applications and their status.
+        </p>
+      </div>
+
+      <div className="mb-6 grid grid-cols-4 gap-4">
+        {[
+          { title: "Total Applications", value: String(data.stats.totalApplications) },
+          { title: "In Progress", value: String(data.stats.inProgress) },
+          { title: "Under Review", value: String(data.stats.underReview) },
+          { title: "Accepted", value: String(data.stats.accepted) },
+        ].map((stat) => (
+          <div key={stat.title} className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="mb-2 text-xs text-gray-500">{stat.title}</div>
+            <div className="text-2xl font-semibold">{stat.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-6 flex items-center gap-3">
+        {["All", "In Progress", "Submitted", "Under Review", "Accepted", "Rejected"].map(
+          (filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`rounded-lg px-4 py-2 text-sm transition-colors ${
+                activeFilter === filter
+                  ? "bg-indigo-600 text-white"
+                  : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              {filter}
+            </button>
+          ),
+        )}
+      </div>
+
+      <div className="space-y-4">
+        {filtered.map((application) => {
+          const config = statusConfig[application.status] || statusConfig["in-progress"];
+
+          return (
+            <div
+              key={application.id}
+              className="rounded-xl border border-gray-200 bg-white p-6"
+            >
+              <div className="mb-4 flex items-start justify-between">
+                <div>
+                  <h3 className="mb-1 text-lg font-semibold">{application.title}</h3>
+                  <p className="text-sm text-gray-600">by {application.company}</p>
+                </div>
+                <div
+                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 ${config.bg} ${config.border} ${config.text}`}
+                >
+                  <span className="text-xs font-medium">{config.label}</span>
+                </div>
+              </div>
+              <div className="mb-4 grid grid-cols-4 gap-4">
+                <div>
+                  <div className="mb-1 text-xs text-gray-500">Submitted</div>
+                  <div className="text-sm font-medium">{application.submittedDate}</div>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-gray-500">Deadline</div>
+                  <div className="text-sm font-medium">{application.deadline}</div>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs text-gray-500">Current Stage</div>
+                  <div className="text-sm font-medium">{application.stage}</div>
+                </div>
+                {application.interviewDate ? (
+                  <div>
+                    <div className="mb-1 text-xs text-gray-500">Interview</div>
+                    <div className="text-sm font-medium text-green-600">
+                      {application.interviewDate}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              <div className="mb-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs text-gray-600">Application Progress</span>
+                  <span className="text-xs font-medium">{application.progress}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      application.status === "rejected"
+                        ? "bg-red-500"
+                        : application.status === "accepted"
+                          ? "bg-green-500"
+                          : "bg-indigo-600"
+                    }`}
+                    style={{ width: `${application.progress}%` }}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  to={`/opportunities/${application.detailOpportunityId}`}
+                  state={{ from: "applications" }}
+                  className="rounded-lg px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
+                >
+                  View Details
+                </Link>
+                {application.status === "in-progress" ? (
+                  <button
+                    onClick={() => continueApplication(application.id)}
+                    disabled={updatingId === application.id}
+                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-60"
+                  >
+                    {updatingId === application.id
+                      ? "Saving..."
+                      : "Continue Application"}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 ? (
+          <div className="rounded-xl border border-gray-200 bg-white p-10 text-center text-gray-400">
+            No applications in this category.
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 }

@@ -190,6 +190,7 @@ class ResourceItemState(BaseModel):
     duration: str
     rating: float
     downloads: int
+    downloaded: bool = False
 
 
 class WebinarItemState(BaseModel):
@@ -197,6 +198,7 @@ class WebinarItemState(BaseModel):
     title: str
     date: str
     time: str
+    registered: bool = False
 
 
 class ResourceState(BaseModel):

@@ -1,285 +1,432 @@
-import { useState, useRef } from 'react';
-import { Upload, FileText, CheckCircle2, AlertCircle, Download, Eye, Trash2, Edit3, X, Check } from 'lucide-react';
+import { useEffect, useRef, useState } from "react";
+import {
+  Upload,
+  FileText,
+  Download,
+  Eye,
+  Trash2,
+  Edit3,
+  X,
+  Check,
+} from "lucide-react";
+import { useLoaderData } from "react-router";
 
-export function loader() {
-    return {};
-}
+import { apiDelete, apiGet, apiPatch, apiPost } from "../lib/api";
+import type { DocumentsResponse } from "../types/api";
 
-interface Doc {
-    title: string;
-    category: string;
-    size: string;
-    uploadDate: string;
-    status: 'ready' | 'needs-update' | 'missing';
-    usedIn: number;
+export async function loader() {
+  return apiGet<DocumentsResponse>("/api/documents");
 }
 
 export default function Documents() {
-    const [activeCategory, setActiveCategory] = useState('All Documents');
-    const [docs, setDocs] = useState<Doc[]>([
-        { title: 'Aisha_Rahman_CV.pdf', category: 'CV / Resume', size: '245 KB', uploadDate: '10 May 2025', status: 'ready', usedIn: 3 },
-        { title: 'Academic_Transcript.pdf', category: 'Academic', size: '1.2 MB', uploadDate: '5 May 2025', status: 'ready', usedIn: 5 },
-        { title: 'Cover_Letter_PETRONAS.pdf', category: 'CV / Resume', size: '156 KB', uploadDate: '8 May 2025', status: 'ready', usedIn: 1 },
-        { title: 'Portfolio_Projects.pdf', category: 'Personal', size: '3.4 MB', uploadDate: '1 May 2025', status: 'needs-update', usedIn: 2 },
-        { title: 'Recommendation_Letter_1.pdf', category: 'Academic', size: '890 KB', uploadDate: '15 Apr 2025', status: 'ready', usedIn: 1 },
-        { title: 'English_Proficiency_Certificate.pdf', category: 'Certifications', size: '567 KB', uploadDate: '20 Apr 2025', status: 'needs-update', usedIn: 3 },
-        { title: 'Personal_Statement.pdf', category: 'Personal', size: '234 KB', uploadDate: '12 May 2025', status: 'ready', usedIn: 2 },
-        { title: 'IC_Passport_Copy.pdf', category: 'Personal', size: '1.1 MB', uploadDate: '3 May 2025', status: 'ready', usedIn: 4 },
-        { title: 'Python_Certification.pdf', category: 'Certifications', size: '445 KB', uploadDate: 'Not uploaded', status: 'missing', usedIn: 0 },
-    ]);
+  const data = useLoaderData() as DocumentsResponse;
+  const [activeCategory, setActiveCategory] = useState("All Documents");
+  const [docs, setDocs] = useState(data.items);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [previewDoc, setPreviewDoc] = useState<DocumentsResponse["items"][number] | null>(
+    null,
+  );
+  const [workingId, setWorkingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetRef = useRef<string | null>(null);
 
-    const [editingTitle, setEditingTitle] = useState<string | null>(null);
-    const [editValue, setEditValue] = useState('');
-    const [downloaded, setDownloaded] = useState<Set<string>>(new Set());
-    const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const uploadForMissingRef = useRef<{ title: string } | null>(null);
+  useEffect(() => {
+    setDocs(data.items);
+  }, [data.items]);
 
-    const statusConfig: Record<string, { bg: string; border: string; text: string; label: string }> = {
-        ready: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', label: 'Ready' },
-        'needs-update': { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', label: 'Needs Update' },
-        missing: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', label: 'Missing' },
-    };
+  const statusConfig: Record<
+    string,
+    { bg: string; border: string; text: string; label: string }
+  > = {
+    ready: {
+      bg: "bg-green-50",
+      border: "border-green-200",
+      text: "text-green-700",
+      label: "Ready",
+    },
+    "needs-update": {
+      bg: "bg-orange-50",
+      border: "border-orange-200",
+      text: "text-orange-700",
+      label: "Needs Update",
+    },
+    missing: {
+      bg: "bg-red-50",
+      border: "border-red-200",
+      text: "text-red-700",
+      label: "Missing",
+    },
+  };
 
-    const categories = ['All Documents', 'CV / Resume', 'Academic', 'Certifications', 'Personal', 'Others'];
-    const filtered = activeCategory === 'All Documents'
-        ? docs
-        : activeCategory === 'Others'
-            ? docs.filter(d => !['CV / Resume', 'Academic', 'Certifications', 'Personal'].includes(d.category))
-            : docs.filter(d => d.category === activeCategory);
+  const categories = [
+    "All Documents",
+    "CV / Resume",
+    "Academic",
+    "Certifications",
+    "Personal",
+    "Others",
+  ];
 
-    const handleDelete = (title: string) => {
-        if (confirm(`Delete "${title}"?`)) {
-            setDocs(prev => prev.filter(d => d.title !== title));
-        }
-    };
+  const filtered =
+    activeCategory === "All Documents"
+      ? docs
+      : activeCategory === "Others"
+        ? docs.filter(
+            (doc) =>
+              !["CV / Resume", "Academic", "Certifications", "Personal"].includes(
+                doc.category,
+              ),
+          )
+        : docs.filter((doc) => doc.category === activeCategory);
 
-    const handleDownload = (title: string) => {
-        setDownloaded(prev => new Set([...prev, title]));
-        // Simulate file download
-        const blob = new Blob([`Simulated content of ${title}`], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = title;
-        a.click();
-        URL.revokeObjectURL(url);
-    };
+  async function handleDelete(documentId: string) {
+    const previous = docs;
+    setWorkingId(documentId);
+    setDocs((current) => current.filter((doc) => doc.id !== documentId));
 
-    const startEdit = (doc: Doc) => {
-        setEditingTitle(doc.title);
-        setEditValue(doc.title);
-    };
+    try {
+      await apiDelete(`/api/documents/${documentId}`);
+    } catch {
+      setDocs(previous);
+    } finally {
+      setWorkingId(null);
+    }
+  }
 
-    const saveEdit = () => {
-        if (!editingTitle || !editValue.trim()) return;
-        setDocs(prev => prev.map(d => d.title === editingTitle ? { ...d, title: editValue.trim() } : d));
-        setEditingTitle(null);
-    };
+  function handleDownload(doc: DocumentsResponse["items"][number]) {
+    const content = JSON.stringify(doc, null, 2);
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = window.document.createElement("a");
+    anchor.href = url;
+    anchor.download = doc.title.replace(/\.[^.]+$/, "") + ".json";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
 
-    const handleFileUpload = (files: FileList | null, targetTitle?: string) => {
-        if (!files || files.length === 0) return;
-        const file = files[0];
-        const sizeMB = file.size / (1024 * 1024);
-        const sizeStr = sizeMB >= 1 ? `${sizeMB.toFixed(1)} MB` : `${Math.round(file.size / 1024)} KB`;
-        const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  function startEdit(document: DocumentsResponse["items"][number]) {
+    setEditingId(document.id);
+    setEditValue(document.title);
+  }
 
-        if (targetTitle) {
-            // Replace/upload for existing doc
-            setDocs(prev => prev.map(d =>
-                d.title === targetTitle
-                    ? { ...d, title: file.name, size: sizeStr, uploadDate: today, status: 'ready' }
-                    : d
-            ));
-        } else {
-            // New upload
-            const newDoc: Doc = {
-                title: file.name,
-                category: 'Personal',
-                size: sizeStr,
-                uploadDate: today,
-                status: 'ready',
-                usedIn: 0,
-            };
-            setDocs(prev => [...prev, newDoc]);
-        }
-    };
+  async function saveEdit() {
+    if (!editingId || !editValue.trim()) {
+      return;
+    }
 
-    return (
-        <div className="p-6 max-w-[1600px] mx-auto">
-            {/* Preview modal */}
-            {previewDoc && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-8" onClick={() => setPreviewDoc(null)}>
-                    <div className="bg-white rounded-xl p-8 max-w-lg w-full" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold">{previewDoc.title}</h3>
-                            <button onClick={() => setPreviewDoc(null)}><X className="w-5 h-5 text-gray-500 hover:text-gray-900" /></button>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg h-64 flex items-center justify-center border border-gray-200 mb-4">
-                            <div className="text-center text-gray-400">
-                                <FileText className="w-16 h-16 mx-auto mb-2 text-indigo-200" />
-                                <p className="text-sm">Preview not available in demo mode</p>
-                                <p className="text-xs mt-1">{previewDoc.size} • {previewDoc.uploadDate}</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => handleDownload(previewDoc.title)}
-                                className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2"
-                            >
-                                <Download className="w-4 h-4" /> Download
-                            </button>
-                            <button onClick={() => setPreviewDoc(null)} className="px-4 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50">Close</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold mb-1">Documents</h1>
-                    <p className="text-gray-600">Manage and organize your application documents.</p>
-                </div>
-                <label className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 flex items-center gap-2 cursor-pointer">
-                    <Upload className="w-4 h-4" /> Upload Document
-                    <input
-                        type="file"
-                        className="hidden"
-                        accept=".pdf,.doc,.docx,.png,.jpg"
-                        onChange={e => handleFileUpload(e.target.files)}
-                    />
-                </label>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4 mb-6">
-                {[
-                    { label: 'Total Documents', value: docs.length },
-                    { label: 'Ready to Use', value: docs.filter(d => d.status === 'ready').length },
-                    { label: 'Needs Update', value: docs.filter(d => d.status === 'needs-update').length },
-                    { label: 'Missing', value: docs.filter(d => d.status === 'missing').length },
-                ].map((s) => (
-                    <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-5">
-                        <div className="text-xs text-gray-500 mb-2">{s.label}</div>
-                        <div className="text-2xl font-semibold">{s.value}</div>
-                    </div>
-                ))}
-            </div>
-
-            <div className="flex gap-3 mb-6">
-                {categories.map((cat) => (
-                    <button
-                        key={cat}
-                        onClick={() => setActiveCategory(cat)}
-                        className={`px-4 py-2 text-sm rounded-lg transition-colors ${activeCategory === cat ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-                    >
-                        {cat}
-                    </button>
-                ))}
-            </div>
-
-            {filtered.length === 0 ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
-                    No documents in this category.
-                </div>
-            ) : (
-                <div className="grid grid-cols-3 gap-4">
-                    {filtered.map((doc) => {
-                        const config = statusConfig[doc.status];
-                        const isEditing = editingTitle === doc.title;
-                        const isDownloaded = downloaded.has(doc.title);
-
-                        return (
-                            <div key={doc.title} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
-                                <div className="flex items-start gap-3 mb-4">
-                                    <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <FileText className="w-6 h-6 text-indigo-600" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        {isEditing ? (
-                                            <div className="flex gap-1">
-                                                <input
-                                                    autoFocus
-                                                    type="text"
-                                                    value={editValue}
-                                                    onChange={e => setEditValue(e.target.value)}
-                                                    onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingTitle(null); }}
-                                                    className="flex-1 text-sm px-2 py-1 border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                />
-                                                <button onClick={saveEdit} className="p-1 text-green-600 hover:bg-green-50 rounded">
-                                                    <Check className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={() => setEditingTitle(null)} className="p-1 text-gray-400 hover:bg-gray-50 rounded">
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <h3 className="font-medium text-sm mb-1 truncate">{doc.title}</h3>
-                                        )}
-                                        <p className="text-xs text-gray-600">{doc.category}</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2 mb-4">
-                                    {[['Size', doc.size], ['Uploaded', doc.uploadDate], ['Used in', `${doc.usedIn} applications`]].map(([label, value]) => (
-                                        <div key={label} className="flex items-center justify-between text-xs">
-                                            <span className="text-gray-500">{label}</span>
-                                            <span className="font-medium">{value}</span>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className={`flex items-center gap-2 mb-4 ${config.bg} ${config.border} border px-3 py-2 rounded-lg ${config.text}`}>
-                                    {doc.status === 'ready'
-                                        ? <CheckCircle2 className="w-4 h-4" />
-                                        : <AlertCircle className="w-4 h-4" />}
-                                    <span className="text-xs font-medium">{config.label}</span>
-                                </div>
-
-                                {doc.status !== 'missing' ? (
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setPreviewDoc(doc)}
-                                            className="flex-1 p-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg flex items-center justify-center gap-1"
-                                        >
-                                            <Eye className="w-4 h-4" /> View
-                                        </button>
-                                        <button
-                                            onClick={() => handleDownload(doc.title)}
-                                            className={`flex-1 p-2 text-sm rounded-lg flex items-center justify-center gap-1 transition-colors ${isDownloaded ? 'text-green-600 bg-green-50' : 'text-gray-600 hover:bg-gray-50'}`}
-                                        >
-                                            {isDownloaded ? <><Check className="w-4 h-4" /> Done</> : <><Download className="w-4 h-4" /> Download</>}
-                                        </button>
-                                        <button
-                                            onClick={() => startEdit(doc)}
-                                            className="p-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
-                                            title="Rename"
-                                        >
-                                            <Edit3 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(doc.title)}
-                                            className="p-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                                            title="Delete"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <label className="w-full bg-indigo-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 cursor-pointer">
-                                        <Upload className="w-4 h-4" /> Upload Document
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept=".pdf,.doc,.docx"
-                                            onChange={e => handleFileUpload(e.target.files, doc.title)}
-                                        />
-                                    </label>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
+    const previous = docs;
+    setWorkingId(editingId);
+    setDocs((current) =>
+      current.map((doc) =>
+        doc.id === editingId ? { ...doc, title: editValue.trim() } : doc,
+      ),
     );
+
+    try {
+      const updated = await apiPatch<DocumentsResponse["items"][number]>(
+        `/api/documents/${editingId}`,
+        { title: editValue.trim() },
+      );
+      setDocs((current) =>
+        current.map((doc) => (doc.id === editingId ? updated : doc)),
+      );
+      setEditingId(null);
+    } catch {
+      setDocs(previous);
+    } finally {
+      setWorkingId(null);
+    }
+  }
+
+  async function handleFileUpload(files: FileList | null) {
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    const file = files[0];
+    const targetId = uploadTargetRef.current;
+    const sizeMB = file.size / (1024 * 1024);
+    const sizeLabel =
+      sizeMB >= 1 ? `${sizeMB.toFixed(1)} MB` : `${Math.round(file.size / 1024)} KB`;
+    const today = new Date().toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    setWorkingId(targetId ?? "new");
+
+    try {
+      if (targetId) {
+        const updated = await apiPatch<DocumentsResponse["items"][number]>(
+          `/api/documents/${targetId}`,
+          {
+            title: file.name,
+            size: sizeLabel,
+            uploadDate: today,
+            status: "ready",
+          },
+        );
+
+        setDocs((current) =>
+          current.map((doc) => (doc.id === targetId ? updated : doc)),
+        );
+      } else {
+        const created = await apiPost<DocumentsResponse["items"][number]>("/api/documents", {
+          title: file.name,
+          category: "Personal",
+          size: sizeLabel,
+          uploadDate: today,
+          status: "ready",
+        });
+
+        setDocs((current) => [created, ...current]);
+      }
+    } finally {
+      setWorkingId(null);
+      uploadTargetRef.current = null;
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
+  const stats = {
+    totalDocuments: docs.length,
+    ready: docs.filter((doc) => doc.status === "ready").length,
+    needsUpdate: docs.filter((doc) => doc.status === "needs-update").length,
+    missing: docs.filter((doc) => doc.status === "missing").length,
+  };
+
+  return (
+    <div className="mx-auto max-w-[1600px] p-6">
+      {previewDoc ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-8"
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl bg-white p-8"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-semibold">{previewDoc.title}</h3>
+              <button onClick={() => setPreviewDoc(null)}>
+                <X className="h-5 w-5 text-gray-500 hover:text-gray-900" />
+              </button>
+            </div>
+            <div className="mb-4 flex h-64 items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+              <div className="text-center text-gray-400">
+                <FileText className="mx-auto mb-2 h-16 w-16 text-indigo-200" />
+                <p className="text-sm">Metadata preview</p>
+                <p className="mt-1 text-xs">
+                  {previewDoc.size} • {previewDoc.uploadDate}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleDownload(previewDoc)}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+              >
+                <Download className="h-4 w-4" /> Download
+              </button>
+              <button
+                onClick={() => setPreviewDoc(null)}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.doc,.docx,.png,.jpg"
+        onChange={(event) => void handleFileUpload(event.target.files)}
+      />
+
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="mb-1 text-2xl font-semibold">Documents</h1>
+          <p className="text-gray-600">
+            Manage and organize your application documents.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            uploadTargetRef.current = null;
+            fileInputRef.current?.click();
+          }}
+          className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          <Upload className="h-4 w-4" /> Upload Document
+        </button>
+      </div>
+
+      <div className="mb-6 grid grid-cols-4 gap-4">
+        {[
+          { label: "Total Documents", value: stats.totalDocuments },
+          { label: "Ready to Use", value: stats.ready },
+          { label: "Needs Update", value: stats.needsUpdate },
+          { label: "Missing", value: stats.missing },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="mb-2 text-xs text-gray-500">{stat.label}</div>
+            <div className="text-2xl font-semibold">{stat.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-6 flex gap-3">
+        {categories.map((category) => (
+          <button
+            key={category}
+            onClick={() => setActiveCategory(category)}
+            className={`rounded-lg px-4 py-2 text-sm transition-colors ${
+              activeCategory === category
+                ? "bg-indigo-600 text-white"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-gray-400">
+          No documents in this category.
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-4">
+          {filtered.map((doc) => {
+            const config = statusConfig[doc.status];
+            const isEditing = editingId === doc.id;
+
+            return (
+              <div
+                key={doc.id}
+                className="rounded-xl border border-gray-200 bg-white p-5 transition-shadow hover:shadow-lg"
+              >
+                <div className="mb-4 flex items-start gap-3">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100">
+                    <FileText className="h-6 w-6 text-indigo-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    {isEditing ? (
+                      <div className="flex gap-1">
+                        <input
+                          autoFocus
+                          type="text"
+                          value={editValue}
+                          onChange={(event) => setEditValue(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              void saveEdit();
+                            }
+
+                            if (event.key === "Escape") {
+                              setEditingId(null);
+                            }
+                          }}
+                          className="flex-1 rounded border border-indigo-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <button
+                          onClick={() => void saveEdit()}
+                          className="rounded p-1 text-green-600 hover:bg-green-50"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="rounded p-1 text-gray-400 hover:bg-gray-50"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <h3 className="mb-1 truncate text-sm font-medium">{doc.title}</h3>
+                    )}
+                    <p className="text-xs text-gray-600">{doc.category}</p>
+                  </div>
+                </div>
+
+                <div
+                  className={`mb-4 flex items-center gap-2 rounded-full border px-3 py-1.5 ${config.bg} ${config.border} ${config.text}`}
+                >
+                  <span className="text-xs font-medium">{config.label}</span>
+                </div>
+
+                <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-xs text-gray-500">Size</div>
+                    <div className="font-medium">{doc.size}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Used In</div>
+                    <div className="font-medium">{doc.usedIn} applications</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-xs text-gray-500">Uploaded</div>
+                    <div className="font-medium">{doc.uploadDate}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  <button
+                    onClick={() => setPreviewDoc(doc)}
+                    className="rounded-lg border border-gray-200 p-2 hover:bg-gray-50"
+                    title="Preview"
+                  >
+                    <Eye className="mx-auto h-4 w-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={() => handleDownload(doc)}
+                    className="rounded-lg border border-gray-200 p-2 hover:bg-gray-50"
+                    title="Download"
+                  >
+                    <Download className="mx-auto h-4 w-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={() => startEdit(doc)}
+                    className="rounded-lg border border-gray-200 p-2 hover:bg-gray-50"
+                    title="Rename"
+                  >
+                    <Edit3 className="mx-auto h-4 w-4 text-gray-600" />
+                  </button>
+                  {doc.status === "missing" || doc.status === "needs-update" ? (
+                    <button
+                      onClick={() => {
+                        uploadTargetRef.current = doc.id;
+                        fileInputRef.current?.click();
+                      }}
+                      className="rounded-lg border border-indigo-200 p-2 text-indigo-600 hover:bg-indigo-50"
+                      title="Upload replacement"
+                    >
+                      <Upload className="mx-auto h-4 w-4" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => void handleDelete(doc.id)}
+                      disabled={workingId === doc.id}
+                      className="rounded-lg border border-red-200 p-2 text-red-600 hover:bg-red-50 disabled:opacity-60"
+                      title="Delete"
+                    >
+                      <Trash2 className="mx-auto h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }

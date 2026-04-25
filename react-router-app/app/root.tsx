@@ -10,6 +10,7 @@ import {
   useNavigate,
   useLocation,
   Link,
+  useLoaderData,
 } from "react-router"
 import {
   LayoutDashboard,
@@ -32,6 +33,12 @@ import {
 
 import type { Route } from "./+types/root"
 import "./app.css"
+import { apiGet } from "./lib/api"
+import type { ProfileResponse } from "./types/api"
+
+export async function loader() {
+  return apiGet<ProfileResponse>("/api/profile")
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -69,11 +76,13 @@ const navItems = [
 ];
 
 export default function App() {
+  const data = useLoaderData() as ProfileResponse
   const navigate = useNavigate();
   const location = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const user = data.profile;
 
   const isAuthPage = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/signup';
 
@@ -208,18 +217,18 @@ export default function App() {
                 className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
               >
                 <img 
-                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aisha" 
-                  alt="Aisha Rahman" 
+                  src={user.avatar}
+                  alt={user.name}
                   className="w-9 h-9 rounded-full bg-indigo-50 border border-gray-200"
                 />
-                <span className="text-sm font-medium text-gray-900">Aisha Rahman</span>
+                <span className="text-sm font-medium text-gray-900">{user.name}</span>
               </div>
 
               {showProfileMenu && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <div className="px-4 py-2 border-b border-gray-100 mb-1">
-                    <div className="text-sm font-semibold text-gray-900">Aisha Rahman</div>
-                    <div className="text-xs text-gray-500">aisha.rahman@student.um.edu.my</div>
+                    <div className="text-sm font-semibold text-gray-900">{user.name}</div>
+                    <div className="text-xs text-gray-500">{user.email}</div>
                   </div>
                   <Link to="/profile" onClick={() => setShowProfileMenu(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                     <User className="w-4 h-4 text-gray-500" /> My Profile

@@ -268,5 +268,69 @@
       },
       "economicImpactNarrative": "The current pipeline exhibits a 'cash-over-experience' equilibrium, where 74% of the economic value is tied to scholarships rather than internships. The critical bottleneck is the 228.5k value at risk combined with a 67% readiness score, threatening conversion. The strategic shift requires pivoting application effort from low-probability/high-cash scholarships to high-probability/experience-focused internships, sacrificing nominal pipeline value to maximize the ROI on her actual goal."
     }
+  },
+  "40bdcbfaa588e4bafe9ae261a0a0de1fbd0df86c7c73476571e771e80b777b79": {
+    "mode": "advisor_reply",
+    "profileHash": "aeeda97ffd4f24655eec7ed9da00fb0ce00c396f877e63781d75d9d25b2dfb9d",
+    "opportunityIds": [
+      "adb-japan-2026",
+      "airasia-data-2026",
+      "cv",
+      "google-step-2026",
+      "linkedin",
+      "maybank-ytp-2026",
+      "ocbc-public-scholarship-2026",
+      "petronas-2026",
+      "portfolio",
+      "shell-grad-2027",
+      "task-1",
+      "task-2",
+      "task-3",
+      "task-4",
+      "transcript",
+      "ytl-scholarship-2026"
+    ],
+    "messageHash": "18d0cf55eafd3d250200feebe3a936dd62c967a0cd3a7a948d141e2ea985536f",
+    "cachedAt": "2026-04-25T16:57:10.903697+00:00",
+    "response": {
+      "response": "Hi Aisha! Based on your profile, you're matched to 3 scholarships right now. Here's how they stack up:\n\n1. **ADB-Japan Scholarship Program 2026** \u2014 Best fit (81%) and highest ROI (83). Covers full tuition + living allowance, which is the most valuable package. Deadline: 15 May (19 days away). \u26a0\ufe0f Missing: Referee recommendation \u2014 you have a task scheduled for 22 May to request this, but the deadline is 15 May, so you need to act sooner.\n\n2. **OCBC Public Scholarship Programme 2026** \u2014 Solid fit (79%), RM 15,000 support, and no missing requirements \u2014 you're ready to apply now. Deadline: 30 Jun (65 days), giving you plenty of time.\n\n3. **YTL Foundation Scholarship Programme 2026** \u2014 Lower fit (72%) but marked \"prepare-soon\" because the deadline is 30 Apr (only 4 days away). Missing: a tailored CV. Given the tight timeline and lower fit, this is a stretch unless you can move fast.\n\n**My recommendation**: Prioritize OCBC first (no blockers, apply-ready), then urgently secure your referee letter for ADB-Japan (highest value). YTL is likely not feasible given the 4-day window.",
+      "summary": "3 scholarships matched: ADB-Japan (highest value, needs referee), OCBC (apply-ready, no blockers), YTL (4-day deadline, lower fit \u2014 likely a stretch).",
+      "reasoningBullets": [
+        "ADB-Japan has the highest fit (81) and ROI (83) with the most valuable award (full tuition + living allowance), but requires a referee letter before the 15 May deadline.",
+        "OCBC is your only blocker-free scholarship \u2014 you can start applying immediately with a 30 Jun deadline.",
+        "YTL's 4-day deadline makes it impractical unless you can produce a tailored CV today; its lower fit score (72) suggests weaker alignment with your CS/Data Science profile.",
+        "Your readiness score is 67% \u2014 portfolio is critical at 48%, which may weaken scholarship applications that assess project evidence.",
+        "You've already saved ADB-Japan and have a planner task for the referee, but the task date (22 May) is after the deadline (15 May)."
+      ],
+      "tradeoff": "ADB-Japan offers the largest financial impact but carries deadline risk (referee needed in <19 days). OCBC is lower value (RM 15,000 vs. full tuition) but is immediately actionable with zero blockers. Going for YTL would consume urgent effort for a lower-fit opportunity.",
+      "whyNotNow": "For ADB-Japan: your referee request task is scheduled for 22 May, which is after the 15 May deadline \u2014 this needs to be moved up immediately. For YTL: 4 days is very tight to customize your CV and submit a competitive application.",
+      "nextStep": "1) Start your OCBC application today \u2014 no blockers. 2) Move your referee request task to this week (before 28 Apr) to meet ADB-Japan's 15 May deadline. 3) Skip YTL unless you can submit a polished CV by 29 Apr.",
+      "economicImpact": "ADB-Japan: Full tuition + living allowance (potentially RM 50,000+ annually). OCBC: RM 15,000 one-time support. Combined potential: RM 65,000+ if you pursue both strategically.",
+      "confidenceScore": 78,
+      "confidenceReason": "Scholarship eligibility is well-matched by the scoring system, but the referee timeline conflict for ADB-Japan and the CV discrepancy for YTL introduce uncertainty about whether missing requirements can be resolved in time.",
+      "uncertainFields": [
+        "Referee availability timeline for ADB-Japan",
+        "Whether YTL's CV requirement means a new tailored CV vs. your existing one",
+        "Exact monetary value of YTL scholarship"
+      ],
+      "citedOpportunityIds": [
+        "adb-japan-2026",
+        "ocbc-public-scholarship-2026",
+        "ytl-scholarship-2026"
+      ],
+      "recommendedActions": [
+        "Start OCBC Public Scholarship application immediately \u2014 zero missing requirements",
+        "Reschedule referee request to this week (before 28 Apr) to meet ADB-Japan's 15 May deadline",
+        "Add 2 quantified achievements to your CV to strengthen all scholarship applications",
+        "Upload 2 outcomes-focused projects to your portfolio (currently at 48% \u2014 critical for scholarship competitiveness)",
+        "Consider deprioritizing YTL given the 4-day window and lower fit score"
+      ],
+      "suggestedPrompts": [
+        "Help me draft a referee request email for ADB-Japan",
+        "What should I highlight in my OCBC scholarship application?",
+        "How can I improve my portfolio for scholarship applications?",
+        "Is YTL worth pursuing with only 4 days left?"
+      ]
+    }
   }
 }
