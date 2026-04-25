@@ -15,7 +15,8 @@ export default function Signup() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // Mock authentication
-        navigate('/');
+        localStorage.setItem('isLoggedIn', 'true');
+        navigate('/dashboard');
     };
 
     return (
@@ -79,7 +80,7 @@ export default function Signup() {
                 <div className="text-center mt-4">
                     <p className="text-sm text-gray-600">
                         Already have an account?{' '}
-                        <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                        <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-500">
                             Sign in
                         </Link>
                     </p>

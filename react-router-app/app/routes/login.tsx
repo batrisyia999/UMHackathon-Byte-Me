@@ -8,8 +8,8 @@ export function loader() {
 
 export default function Login() {
     const navigate = useNavigate();
-    const [email, setEmail] = useState('student@um.edu.my');
-    const [password, setPassword] = useState('password123');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
