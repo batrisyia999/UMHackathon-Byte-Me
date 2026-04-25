@@ -95,16 +95,47 @@ export default function Insights() {
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <h3 className="font-semibold mb-4">Opportunity Categories (by Value)</h3>
                     <div className="relative w-48 h-48 mx-auto mb-4">
-                        <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="96" cy="96" r="80" fill="none" stroke="#6366f1" strokeWidth="40" strokeDasharray="226.19 502.65" strokeDashoffset="0" />
-                            <circle cx="96" cy="96" r="80" fill="none" stroke="#22c55e" strokeWidth="40" strokeDasharray="155.82 502.65" strokeDashoffset="-226.19" />
-                            <circle cx="96" cy="96" r="80" fill="none" stroke="#f97316" strokeWidth="40" strokeDasharray="85.45 502.65" strokeDashoffset="-382.01" />
-                            <circle cx="96" cy="96" r="80" fill="none" stroke="#eab308" strokeWidth="40" strokeDasharray="35.19 502.65" strokeDashoffset="-467.46" />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <div className="text-xl font-semibold">RM 315,680</div>
-                            <div className="text-xs text-gray-600">Total</div>
-                        </div>
+                        {(() => {
+                            const categories = [
+                                { color: '#6366f1', bgClass: 'bg-indigo-600', label: 'Scholarships', amount: 142560, percent: 45 },
+                                { color: '#22c55e', bgClass: 'bg-green-500', label: 'Grants', amount: 104760, percent: 31 },
+                                { color: '#f97316', bgClass: 'bg-orange-500', label: 'Internships', amount: 54120, percent: 17 },
+                                { color: '#eab308', bgClass: 'bg-yellow-500', label: 'Competitions', amount: 22480, percent: 7 },
+                            ];
+                            const radius = 70;
+                            const circumference = 2 * Math.PI * radius;
+                            let accumulatedPercent = 0;
+
+                            return (
+                                <>
+                                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 192 192">
+                                        {categories.map((cat, i) => {
+                                            const dashArray = `${(cat.percent / 100) * circumference} ${circumference}`;
+                                            const dashOffset = -(accumulatedPercent / 100) * circumference;
+                                            accumulatedPercent += cat.percent;
+                                            return (
+                                                <circle
+                                                    key={i}
+                                                    cx="96"
+                                                    cy="96"
+                                                    r={radius}
+                                                    fill="none"
+                                                    stroke={cat.color}
+                                                    strokeWidth="32"
+                                                    strokeDasharray={dashArray}
+                                                    strokeDashoffset={dashOffset}
+                                                    strokeLinecap="round"
+                                                />
+                                            );
+                                        })}
+                                    </svg>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                        <div className="text-l font-semibold">RM 315,680</div>
+                                        <div className="text-xs text-gray-600">Total</div>
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
                     <div className="space-y-2">
                         {[

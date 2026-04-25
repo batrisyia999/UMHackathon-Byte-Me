@@ -296,7 +296,7 @@ function OpportunityCard({ id, tag, verified, logo, title, company, category, de
           </div>
         </div>
       </div>
-      <Link to={`/opportunities/${id}`} className="w-full bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">
+      <Link to={`/opportunities/${id}`} state={{ from: 'opportunities' }} className="w-full bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">
         View Opportunity
       </Link>
     </div>

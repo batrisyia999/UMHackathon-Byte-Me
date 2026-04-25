@@ -104,7 +104,7 @@ export default function Applications() {
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <Link to={`/opportunities/${app.company.toLowerCase().replace(/\s+/g, '-')}-2025`} className="px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg">View Details</Link>
+                                <Link to={`/opportunities/${app.company.toLowerCase().replace(/\s+/g, '-')}-2025`} state={{ from: 'applications' }} className="px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg">View Details</Link>
                                 {app.status === 'in-progress' && (
                                     <button
                                         onClick={() => continueApplication(app.title)}

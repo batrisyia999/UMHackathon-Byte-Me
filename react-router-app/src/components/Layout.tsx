@@ -13,7 +13,7 @@ import {
 import { MOCK_USER } from '../../app/lib/mockData';
 
 const NAVIGATION = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Pipeline', href: '/pipeline', icon: KanbanSquare },
   { name: 'Opportunities', href: '/opportunities', icon: Briefcase },
   { name: 'Readiness Tracker', href: '/readiness', icon: CheckSquare },
@@ -30,7 +30,7 @@ export function Layout() {
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 shadow-sm relative z-20">
         {/* Brand */}
         <div className="h-16 flex items-center px-6 border-b border-slate-100">
-          <Link to="/" className="flex items-center gap-2.5 text-indigo-600 hover:text-indigo-700 transition-colors">
+          <Link to="/dashboard" className="flex items-center gap-2.5 text-indigo-600 hover:text-indigo-700 transition-colors">
             <div className="bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm">
               <Sparkles className="w-5 h-5" />
             </div>

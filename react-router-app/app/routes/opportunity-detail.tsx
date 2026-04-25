@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { ArrowLeft, CheckCircle2, ExternalLink, Bookmark, BookmarkCheck, Share2, Calendar, MapPin, DollarSign, Users, Award, TrendingUp, Sparkles, FileText } from 'lucide-react';
 
 export function loader() {
@@ -7,15 +7,20 @@ export function loader() {
 }
 
 export default function OpportunityDetail() {
+    const location = useLocation();
     const [bookmarked, setBookmarked] = useState(false);
     const [saved, setSaved] = useState(false);
     const [applied, setApplied] = useState(false);
 
+    const fromApplications = location.state?.from === 'applications';
+    const backPath = fromApplications ? "/applications" : "/opportunities";
+    const backLabel = fromApplications ? "Applications" : "Opportunities";
+
     return (
         <div className="p-6 max-w-[1400px] mx-auto">
-            <Link to="/opportunities" className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <Link to={backPath} className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
                 <ArrowLeft className="w-4 h-4" />
-                Back to Opportunities
+                Back to {backLabel}
             </Link>
 
             <div className="grid grid-cols-3 gap-6">
