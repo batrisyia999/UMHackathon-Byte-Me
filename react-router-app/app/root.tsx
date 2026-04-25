@@ -115,7 +115,7 @@ export default function App() {
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
           <Sparkles className="w-6 h-6 text-indigo-600 mr-2" />
-          <span className="text-xl font-bold text-gray-900">OpportunIQ</span>
+          <span className="text-xl font-bold text-gray-900">Zenith</span>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {navItems.map((item) => (

@@ -96,10 +96,10 @@ export default function Insights() {
                     <h3 className="font-semibold mb-4">Opportunity Categories (by Value)</h3>
                     <div className="relative w-48 h-48 mx-auto mb-4">
                         <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="96" cy="96" r="80" fill="none" stroke="#6366f1" strokeWidth="40" strokeDasharray="502.4" strokeDashoffset="0" />
-                            <circle cx="96" cy="96" r="80" fill="none" stroke="#22c55e" strokeWidth="40" strokeDasharray="502.4" strokeDashoffset="125.6" />
-                            <circle cx="96" cy="96" r="80" fill="none" stroke="#f97316" strokeWidth="40" strokeDasharray="502.4" strokeDashoffset="251.2" />
-                            <circle cx="96" cy="96" r="80" fill="none" stroke="#eab308" strokeWidth="40" strokeDasharray="502.4" strokeDashoffset="376.8" />
+                            <circle cx="96" cy="96" r="80" fill="none" stroke="#6366f1" strokeWidth="40" strokeDasharray="226.19 502.65" strokeDashoffset="0" />
+                            <circle cx="96" cy="96" r="80" fill="none" stroke="#22c55e" strokeWidth="40" strokeDasharray="155.82 502.65" strokeDashoffset="-226.19" />
+                            <circle cx="96" cy="96" r="80" fill="none" stroke="#f97316" strokeWidth="40" strokeDasharray="85.45 502.65" strokeDashoffset="-382.01" />
+                            <circle cx="96" cy="96" r="80" fill="none" stroke="#eab308" strokeWidth="40" strokeDasharray="35.19 502.65" strokeDashoffset="-467.46" />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                             <div className="text-xl font-semibold">RM 315,680</div>
@@ -109,7 +109,7 @@ export default function Insights() {
                     <div className="space-y-2">
                         {[
                             { color: 'bg-indigo-600', label: 'Scholarships', value: 'RM 142,560 (45%)' },
-                            { color: 'bg-green-500', label: 'Grants', value: 'RM 104,760 (22%)' },
+                            { color: 'bg-green-500', label: 'Grants', value: 'RM 104,760 (31%)' },
                             { color: 'bg-orange-500', label: 'Internships', value: 'RM 54,120 (17%)' },
                             { color: 'bg-yellow-500', label: 'Competitions', value: 'RM 22,480 (7%)' },
                         ].map((item) => (
@@ -179,17 +179,19 @@ export default function Insights() {
                             ))}
                         </div>
                     </div>
-                    <div className="h-48 flex items-end gap-2 mb-4">
+                    <div className="h-48 flex items-end gap-2 mb-4 pt-4">
                         {bars.map((value, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center">
-                                <div
-                                    className="w-full bg-indigo-100 rounded-t cursor-pointer hover:bg-indigo-200 transition-colors"
-                                    style={{ height: `${(value / 320) * 100}%` }}
-                                    title={`${months[i]}: RM ${value}k`}
-                                >
-                                    <div className="w-full bg-indigo-600 rounded-t" style={{ height: '70%' }}></div>
+                            <div key={i} className="flex-1 h-full flex flex-col justify-end">
+                                <div className="flex-1 flex items-end">
+                                    <div
+                                        className="w-full bg-indigo-100 rounded-t cursor-pointer hover:bg-indigo-200 transition-colors relative"
+                                        style={{ height: `${(value / 320) * 100}%` }}
+                                        title={`${months[i]}: RM ${value}k`}
+                                    >
+                                        <div className="absolute bottom-0 w-full bg-indigo-600 rounded-t" style={{ height: '70%' }}></div>
+                                    </div>
                                 </div>
-                                <div className="text-xs text-gray-500 mt-2">{months[i]}</div>
+                                <div className="text-xs text-gray-500 mt-2 text-center h-4 flex-shrink-0">{months[i]}</div>
                             </div>
                         ))}
                     </div>

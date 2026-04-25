@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router';
 import {
   BookOpen,
   GraduationCap,
@@ -29,11 +29,26 @@ import type { Opportunity, ReadinessItem, PlannerTask } from '../types/index';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+export function meta() {
+  return [
+    { title: "Home | Zenith" },
+    { name: "description", content: "Welcome to Zenith." },
+  ];
+}
+
 export function loader() {
   return {};
 }
 
 export default function Home() {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('isLoggedIn')) {
+      navigate('/login');
+    }
+  }, [navigate]);
+
   const user = MOCK_USER;
   const pipeline = MOCK_PIPELINE_SUMMARY;
   const readiness = MOCK_READINESS_ITEMS;

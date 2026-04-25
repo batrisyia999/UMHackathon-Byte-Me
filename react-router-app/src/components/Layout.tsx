@@ -35,7 +35,7 @@ export function Layout() {
               <Sparkles className="w-5 h-5" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
-              Opportun<span className="text-indigo-600">IQ</span>
+              Zen<span className="text-indigo-600">ith</span>
             </span>
           </Link>
         </div>

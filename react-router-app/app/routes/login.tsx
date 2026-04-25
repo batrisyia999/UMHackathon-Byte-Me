@@ -23,7 +23,7 @@ export default function Login() {
                 <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-6">
                         <Sparkles className="w-8 h-8 text-indigo-600" />
-                        <span className="text-2xl font-bold text-gray-900">OpportunIQ</span>
+                        <span className="text-2xl font-bold text-gray-900">Zenith</span>
                     </div>
                     <h2 className="text-2xl font-semibold text-gray-900">Welcome back</h2>
                     <p className="mt-2 text-sm text-gray-600">

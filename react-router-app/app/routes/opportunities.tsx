@@ -32,6 +32,21 @@ export default function Opportunities() {
 
   const filteredOpportunities = allOpportunities.filter(opp => activeCategory === 'All' || opp.category === activeCategory);
 
+  const sortedOpportunities = [...filteredOpportunities].sort((a, b) => {
+    if (activeSort === 'Best Match') return b.fitScore - a.fitScore;
+    if (activeSort === 'Highest ROI') return b.roiScore - a.roiScore;
+    if (activeSort === 'Low Effort') {
+      const rank: Record<string, number> = { Low: 1, Medium: 2, High: 3 };
+      return (rank[a.effort] || 4) - (rank[b.effort] || 4);
+    }
+    if (activeSort === 'Most Urgent') {
+      if (a.deadline === 'Self-paced') return 1;
+      if (b.deadline === 'Self-paced') return -1;
+      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    }
+    return 0;
+  });
+
   const removeFilter = (label: string) => {
     setFilters(prev => prev.filter(f => f.label !== label));
   };
@@ -85,7 +100,7 @@ export default function Opportunities() {
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-600">{filteredOpportunities.length} opportunities found</div>
+          <div className="text-sm text-gray-600">{sortedOpportunities.length} opportunities found</div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Sort by:</span>
             {['Best Match', 'Highest ROI', 'Most Urgent', 'Low Effort'].map(sort => (
@@ -112,7 +127,7 @@ export default function Opportunities() {
       <div className="flex gap-6">
         <div className="flex-1">
           <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-4' : 'space-y-4'}>
-            {filteredOpportunities.map(opp => (
+            {sortedOpportunities.map(opp => (
               <OpportunityCard
                 key={opp.id}
                 id={opp.id}

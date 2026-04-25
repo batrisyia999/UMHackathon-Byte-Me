@@ -5,7 +5,7 @@ export default [
     route("ai-advisor", "routes/ai-advisor.tsx"),
     route("profile", "routes/profile.tsx"),
     route("opportunities", "routes/opportunities.tsx"),
-    route("opportunity-detail", "routes/opportunity-detail.tsx"),
+    route("opportunities/:id", "routes/opportunity-detail.tsx"),
     route("pipeline", "routes/pipeline.tsx"),
     route("applications", "routes/applications.tsx"),
     route("calendar", "routes/calendar.tsx"),
