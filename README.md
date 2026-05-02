@@ -1,6 +1,6 @@
 # UMHackathon-Byte-Me
 
-Integrated frontend/backend setup for the OpportunIQ app:
+Integrated frontend/backend setup for the Zenith app:
 
 - `backend/`: FastAPI API with persisted mock state under `backend/data/state`
 - `react-router-app/`: React Router frontend that now loads real data from `/api/*`
